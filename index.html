@@ -647,42 +647,51 @@ async function fetchSingleStock(symbol) {
 
 // ===== Market Index Data =====
 const INDEX_CONFIG = [
-  { id: 'es', name: '标普500期货', symbol: 'hf_ES', fallback: 'ES=F', type: 'us', src: 'sina' },
-  { id: 'nq', name: '纳斯达克期货', symbol: 'hf_NQ', fallback: 'NQ=F', type: 'us', src: 'sina' },
-  { id: 'ym', name: '道琼斯期货', symbol: 'hf_YM', fallback: 'YM=F', type: 'us', src: 'sina' },
+  { id: 'es', name: '标普500期货', symbol: 'hf_ES', fallback: 'ES=F', type: 'us', src: 'tencent' },
+  { id: 'nq', name: '纳斯达克期货', symbol: 'hf_NQ', fallback: 'NQ=F', type: 'us', src: 'tencent' },
+  { id: 'ym', name: '道琼斯期货', symbol: 'hf_YM', fallback: 'YM=F', type: 'us', src: 'tencent' },
   { id: 'sh', name: '上证指数', secid: '1.000001', type: 'cn', src: 'eastmoney' },
   { id: 'sz', name: '深证成指', secid: '0.399001', type: 'cn', src: 'eastmoney' },
   { id: 'cy', name: '创业板指', secid: '0.399006', type: 'cn', src: 'eastmoney' },
 ];
 
-// Sina Finance JSONP index fetch
-function fetchSinaIndex(symbol) {
+// Tencent Finance JSONP index fetch (no Referer requirement, works globally)
+// Batch-fetches all 3 US futures in one request
+function fetchTencentIndices(symbols) {
   return new Promise((resolve, reject) => {
-    const globalKey = 'hq_str_' + symbol;
-    delete window[globalKey];
+    const keys = symbols.map(s => 'v_' + s);
+    keys.forEach(k => { delete window[k]; });
     const sc = document.createElement('script');
-    sc.src = 'https://hq.sinajs.cn/list=' + symbol + '&_=' + Date.now();
+    sc.src = 'https://qt.gtimg.cn/q=' + symbols.join(',') + '&_=' + Date.now();
     let resolved = false;
     sc.onload = () => {
       if (resolved) return;
       resolved = true;
       try { document.head.removeChild(sc); } catch(e) {}
-      const raw = window[globalKey];
-      if (raw && typeof raw === 'string') {
-        const p = raw.split(',');
-        // Sina futures format: [0]=currentPrice, [1]="", [2]=bid, [3]=ask, [4]=open, [5]=high, [6]=low, [7]=prevSettle, [8]=prevClose
-        const price = parseFloat(p[0]) || 0;
-        const prevClose = parseFloat(p[7]) || price;
-        const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
-        console.log('[Sina ' + symbol + '] price=' + price + ' prevClose=' + prevClose + ' pct=' + changePct.toFixed(2) + '%');
-        resolve({ price, changePct, change: price - prevClose, real: true });
+      const results = {};
+      symbols.forEach(sym => {
+        const key = 'v_' + sym;
+        const raw = window[key];
+        delete window[key];
+        if (raw && typeof raw === 'string') {
+          const p = raw.split(',');
+          // Tencent format: [0]=price, [1]=changePct(%), [7]=prevClose(昨收), [8]=prevSettle
+          const price = parseFloat(p[0]) || 0;
+          const prevClose = parseFloat(p[7]) || price;
+          const changePct = parseFloat(p[1]);
+          console.log('[Tencent ' + sym + '] price=' + price + ' prevClose=' + prevClose + ' pct=' + changePct.toFixed(2) + '%');
+          results[sym] = { price, changePct, change: price - prevClose, real: true };
+        }
+      });
+      if (Object.keys(results).length > 0) {
+        resolve(results);
       } else {
         reject(new Error('no data'));
       }
     };
     sc.onerror = () => { if (!resolved) { resolved = true; try { document.head.removeChild(sc); } catch(e) {} reject(new Error('failed')); } };
     document.head.appendChild(sc);
-    setTimeout(() => { if (!resolved) { resolved = true; delete window[globalKey]; try { document.head.removeChild(sc); } catch(e) {} reject(new Error('timeout')); } }, 5000);
+    setTimeout(() => { if (!resolved) { resolved = true; keys.forEach(k => delete window[k]); try { document.head.removeChild(sc); } catch(e) {} reject(new Error('timeout')); } }, 5000);
   });
 }
 
@@ -740,22 +749,19 @@ async function fetchIndices() {
   if (indexDataCache && now - indexDataTime < INDEX_TTL) return indexDataCache;
   const results = {};
 
-  // US futures: try Sina JSONP first, fall back to Yahoo Finance fetch
+  // US futures: Tencent batch JSONP (no Referer restriction) with Yahoo fallback
   const usItems = INDEX_CONFIG.filter(x => x.type === 'us');
-  const usSettled = await Promise.allSettled(usItems.map(x => fetchSinaIndex(x.symbol)));
-  const fallbackNeeded = [];
-  usSettled.forEach((s, i) => {
-    if (s.status === 'fulfilled' && s.value) {
-      results[usItems[i].symbol] = s.value;
-    } else {
-      fallbackNeeded.push(i);
-    }
-  });
-  if (fallbackNeeded.length > 0) {
-    console.log('[Index] Sina failed for ' + fallbackNeeded.length + ' US futures, trying Yahoo fallback');
-    const fbSettled = await Promise.allSettled(fallbackNeeded.map(i => fetchYahooIndex(usItems[i].fallback)));
-    fbSettled.forEach((s, j) => {
-      results[usItems[fallbackNeeded[j]].symbol] = (s.status === 'fulfilled' && s.value) ? s.value : null;
+  const usSymbols = usItems.map(x => x.symbol);
+  try {
+    const tcResults = await fetchTencentIndices(usSymbols);
+    usItems.forEach(item => {
+      results[item.symbol] = tcResults[item.symbol] || null;
+    });
+  } catch(e) {
+    console.log('[Index] Tencent batch fetch failed, trying Yahoo fallback');
+    const fbSettled = await Promise.allSettled(usItems.map(x => fetchYahooIndex(x.fallback)));
+    fbSettled.forEach((s, i) => {
+      results[usItems[i].symbol] = (s.status === 'fulfilled' && s.value) ? s.value : null;
     });
   }
 
