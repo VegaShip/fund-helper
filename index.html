@@ -21,8 +21,20 @@ body {
   position: sticky; top: 0; z-index: 10;
   box-shadow: 0 2px 12px rgba(26,115,232,0.3);
 }
-.header-title { font-size: 17px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+.header-row { display: flex; align-items: center; justify-content: center; position: relative; }
+.header-title { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
 .header-sub { font-size: 10px; text-align: center; opacity: 0.7; margin-top: 1px; }
+.header-update { font-size: 9px; text-align: center; opacity: 0.5; margin-top: 1px; }
+.refresh-btn {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.2); border: none; color: #fff;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 14px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: transform 0.3s;
+}
+.refresh-btn:active { background: rgba(255,255,255,0.35); }
+.refresh-btn.spinning { transform: translateY(-50%) rotate(360deg); }
 
 /* ===== Summary ===== */
 .summary {
@@ -62,7 +74,6 @@ body {
 .fund-card {
   background: #fff;
   border-radius: 12px;
-  padding: 12px 14px;
   margin-bottom: 8px;
   box-shadow: 0 1px 8px rgba(0,0,0,0.04);
   cursor: pointer;
@@ -70,7 +81,8 @@ body {
   position: relative;
   overflow: hidden;
 }
-.fund-card:active { transform: scale(0.98); }
+.fund-card:active .fund-card-main { transform: scale(0.99); }
+.fund-card-main { padding: 12px 14px; transition: transform 0.12s; }
 .fund-card .top { display: flex; justify-content: space-between; align-items: flex-start; }
 .fund-card .name { font-size: 14px; font-weight: 700; color: #333; }
 .fund-card .code { font-size: 10px; color: #999; margin-top: 1px; }
@@ -91,6 +103,83 @@ body {
 .fund-card .stat .s-val.up { color: #e74c3c; }
 .fund-card .stat .s-val.down { color: #00b894; }
 .fund-card .stat .s-lbl { font-size: 10px; color: #bbb; margin-top: 1px; }
+.fund-card .expand-icon { font-size: 10px; color: #ccc; text-align: center; margin-top: 4px; transition: transform 0.25s; }
+.fund-card .expand-icon.open { transform: rotate(180deg); }
+
+/* ===== Fund Card Detail (expandable) ===== */
+.fund-card-detail {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  padding: 0 14px; border-top: 0px solid #f0f0f0;
+}
+.fund-card-detail.show {
+  max-height: 900px;
+  padding: 12px 14px;
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+.detail-section { margin-bottom: 14px; }
+.detail-title { font-size: 12px; font-weight: 700; color: #666; margin-bottom: 6px; }
+.chart-wrap { width: 100%; height: 140px; border-radius: 8px; background: #fafafa; overflow: hidden; }
+.chart-wrap canvas { width: 100%; height: 100%; }
+
+/* Holdings Table */
+.holdings-table { width: 100%; border-collapse: collapse; }
+.holding-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px;
+}
+.holding-row:last-child { border-bottom: none; }
+.holding-name { font-weight: 600; color: #333; flex: 1; }
+.holding-weight { color: #999; width: 44px; text-align: right; margin-right: 8px; }
+.holding-price { width: 70px; text-align: right; font-weight: 700; }
+.holding-price.up { color: #e74c3c; }
+.holding-price.down { color: #00b894; }
+.holding-market {
+  font-size: 9px; padding: 1px 5px; border-radius: 3px;
+  margin-right: 6px; font-weight: 600;
+}
+.holding-market.us { background: #e8f0fe; color: #1a73e8; }
+.holding-market.hk { background: #fff3e0; color: #e67e22; }
+.holding-market.commodity { background: #f0e8f0; color: #8e44ad; }
+.holding-time { font-size: 9px; color: #ccc; margin-top: 2px; text-align: right; }
+.market-status {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  display: inline-block; font-weight: 600;
+}
+.market-status.open { background: #e8f8f0; color: #00b894; }
+.market-status.closed { background: #f0f0f0; color: #999; }
+
+/* Recommendation */
+.recommend-box {
+  border-radius: 8px; padding: 10px 12px; margin-top: 4px;
+}
+.recommend-box.buy { background: #fff5f5; border-left: 3px solid #e74c3c; }
+.recommend-box.hold { background: #f8f9fa; border-left: 3px solid #f39c12; }
+.recommend-box.sell { background: #f0fff4; border-left: 3px solid #00b894; }
+.recommend-label { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+.recommend-box.buy .recommend-label { color: #e74c3c; }
+.recommend-box.hold .recommend-label { color: #f39c12; }
+.recommend-box.sell .recommend-label { color: #00b894; }
+.recommend-reason { font-size: 11px; color: #666; line-height: 1.6; }
+.recommend-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.recommend-tag {
+  font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 600;
+}
+.recommend-tag.bull { background: #ffe8e8; color: #e74c3c; }
+.recommend-tag.bear { background: #e8f8f0; color: #00b894; }
+.recommend-tag.neutral { background: #f0f0f0; color: #666; }
+
+.detail-update-btn {
+  width: 100%; height: 36px;
+  background: #f0f4ff; color: #1a73e8; border: 1.5px dashed #c4d7f5;
+  border-radius: 8px; font-size: 12px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: background 0.15s;
+}
+.detail-update-btn:active { background: #e0eaff; }
+
+/* ===== No Holdings ===== */
+.no-holdings { font-size: 12px; color: #ccc; text-align: center; padding: 12px 0; }
 
 /* ===== Ranking Card ===== */
 .rank-card {
@@ -270,6 +359,15 @@ body {
 }
 .toast.show { opacity: 1; }
 
+/* Loading shimmer */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
 @media (min-width: 500px) {
   .summary, .section { max-width: 480px; margin-left: auto; margin-right: auto; }
   .header { padding-left: calc(50vw - 240px); padding-right: calc(50vw - 240px); }
@@ -279,8 +377,12 @@ body {
 <body>
 
 <div class="header">
-  <div class="header-title">📊 QDII 基金估值小助手</div>
-  <div class="header-sub">每周调仓 · 涨跌排行 · 自主管理</div>
+  <div class="header-row">
+    <div class="header-title">📊 QDII 基金估值小助手</div>
+    <button class="refresh-btn" id="refreshBtn" onclick="forceRefresh()">↻</button>
+  </div>
+  <div class="header-sub">每周调仓 · 涨跌排行 · 实时行情</div>
+  <div class="header-update" id="updateTime">--</div>
 </div>
 
 <div class="summary" id="summary">
@@ -420,18 +522,174 @@ const STORAGE_KEY = 'fund_helper_data';
 let funds = [];
 let deleteTargetId = null;
 let updateTargetId = null;
+let expandedFundId = null;
 
 function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { funds = JSON.parse(raw); }
-  } catch(e) { funds = []; }
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) { funds = JSON.parse(raw); } } catch(e) { funds = []; }
 }
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(funds));
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(funds)); }
+
+// ===== Holdings data for sample funds =====
+const FUND_HOLDINGS = {
+  '000071': [
+    { name: '腾讯控股', symbol: '0700.HK', weight: 8.5, market: 'hk' },
+    { name: '阿里巴巴', symbol: '9988.HK', weight: 7.2, market: 'hk' },
+    { name: '美团', symbol: '3690.HK', weight: 5.8, market: 'hk' },
+    { name: '汇丰控股', symbol: '0005.HK', weight: 5.5, market: 'hk' },
+    { name: '建设银行', symbol: '0939.HK', weight: 4.2, market: 'hk' },
+  ],
+  '118001': [
+    { name: '英伟达', symbol: 'NVDA', weight: 8.8, market: 'us' },
+    { name: '微软', symbol: 'MSFT', weight: 7.5, market: 'us' },
+    { name: '苹果', symbol: 'AAPL', weight: 6.2, market: 'us' },
+    { name: '亚马逊', symbol: 'AMZN', weight: 5.0, market: 'us' },
+    { name: 'Meta', symbol: 'META', weight: 4.5, market: 'us' },
+  ],
+  '539002': [
+    { name: '台积电', symbol: 'TSM', weight: 8.2, market: 'us' },
+    { name: '三星电子', symbol: 'SSNLF', weight: 6.5, market: 'us' },
+    { name: '腾讯控股', symbol: '0700.HK', weight: 5.0, market: 'hk' },
+    { name: '阿里巴巴', symbol: '9988.HK', weight: 4.2, market: 'hk' },
+    { name: '美团', symbol: '3690.HK', weight: 3.5, market: 'hk' },
+  ],
+  '000834': [
+    { name: '英伟达', symbol: 'NVDA', weight: 9.2, market: 'us' },
+    { name: '苹果', symbol: 'AAPL', weight: 8.0, market: 'us' },
+    { name: '微软', symbol: 'MSFT', weight: 7.5, market: 'us' },
+    { name: '亚马逊', symbol: 'AMZN', weight: 6.0, market: 'us' },
+    { name: '谷歌', symbol: 'GOOGL', weight: 5.0, market: 'us' },
+  ],
+  '161130': [
+    { name: '苹果', symbol: 'AAPL', weight: 9.5, market: 'us' },
+    { name: '微软', symbol: 'MSFT', weight: 8.8, market: 'us' },
+    { name: '英伟达', symbol: 'NVDA', weight: 7.2, market: 'us' },
+    { name: '亚马逊', symbol: 'AMZN', weight: 6.0, market: 'us' },
+    { name: 'Meta', symbol: 'META', weight: 5.0, market: 'us' },
+  ],
+  '501018': [
+    { name: '埃克森美孚', symbol: 'XOM', weight: 8.5, market: 'us' },
+    { name: '雪佛龙', symbol: 'CVX', weight: 7.0, market: 'us' },
+    { name: '壳牌', symbol: 'SHEL', weight: 6.5, market: 'us' },
+    { name: '道达尔', symbol: 'TTE', weight: 5.0, market: 'us' },
+    { name: 'BP石油', symbol: 'BP', weight: 4.0, market: 'us' },
+  ],
+  '003322': [
+    { name: '埃克森美孚', symbol: 'XOM', weight: 8.0, market: 'us' },
+    { name: '雪佛龙', symbol: 'CVX', weight: 7.5, market: 'us' },
+    { name: '壳牌', symbol: 'SHEL', weight: 6.0, market: 'us' },
+    { name: '道达尔', symbol: 'TTE', weight: 5.5, market: 'us' },
+    { name: 'BP石油', symbol: 'BP', weight: 4.5, market: 'us' },
+  ],
+  '513310': [
+    { name: '三星电子', symbol: 'SSNLF', weight: 15.0, market: 'us' },
+    { name: 'SK海力士', symbol: 'HXSCL', weight: 12.0, market: 'us' },
+    { name: '台积电', symbol: 'TSM', weight: 10.0, market: 'us' },
+    { name: '中芯国际', symbol: 'SMI', weight: 5.0, market: 'us' },
+    { name: 'ASML', symbol: 'ASML', weight: 4.0, market: 'us' },
+  ],
+  '001668': [
+    { name: '英伟达', symbol: 'NVDA', weight: 8.5, market: 'us' },
+    { name: '台积电', symbol: 'TSM', weight: 7.0, market: 'us' },
+    { name: 'ASML', symbol: 'ASML', weight: 6.0, market: 'us' },
+    { name: '西门子', symbol: 'SIEGY', weight: 5.0, market: 'us' },
+    { name: '通用电气', symbol: 'GE', weight: 4.5, market: 'us' },
+  ],
+  '005877': [
+    { name: '腾讯控股', symbol: '0700.HK', weight: 8.0, market: 'hk' },
+    { name: '美团', symbol: '3690.HK', weight: 7.0, market: 'hk' },
+    { name: '快手', symbol: '1024.HK', weight: 6.0, market: 'hk' },
+    { name: '哔哩哔哩', symbol: 'BILI', weight: 5.0, market: 'us' },
+    { name: '拼多多', symbol: 'PDD', weight: 4.5, market: 'us' },
+  ],
+};
+
+// ===== Stock Price Cache & API =====
+const stockCache = {};
+const CACHE_TTL = 120000; // 2 min
+let refreshTimer = null;
+
+async function fetchStockPrices(symbols) {
+  const unique = [...new Set(symbols)];
+  const now = Date.now();
+  const results = {};
+  const toFetch = [];
+  for (const sym of unique) {
+    if (stockCache[sym] && now - stockCache[sym].timestamp < CACHE_TTL) {
+      results[sym] = stockCache[sym].data;
+    } else { toFetch.push(sym); }
+  }
+  if (toFetch.length > 0) {
+    const fetches = toFetch.map(sym => fetchSingleStock(sym));
+    const settled = await Promise.allSettled(fetches);
+    for (let i = 0; i < toFetch.length; i++) {
+      const sym = toFetch[i];
+      const d = settled[i].status === 'fulfilled' && settled[i].value
+        ? settled[i].value : simulateStockPrice(sym);
+      stockCache[sym] = { data: d, timestamp: now };
+      results[sym] = d;
+    }
+  }
+  return results;
 }
 
-// ===== Sample Funds Data (2026年TOP QDII基金) =====
+async function fetchSingleStock(symbol) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`;
+    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const result = data.chart.result[0];
+    if (!result) return null;
+    const meta = result.meta;
+    const quotes = result.indicators.quote[0];
+    const closes = quotes.close.filter(c => c !== null);
+    const prevClose = closes.length > 1 ? closes[closes.length - 2] : meta.previousClose || meta.regularMarketPrice;
+    const currentPrice = meta.regularMarketPrice;
+    const change = currentPrice - prevClose;
+    const changePct = prevClose ? (change / prevClose * 100) : 0;
+    return { price: currentPrice, change, changePct, prevClose, simulated: false };
+  } catch(e) { return null; }
+}
+
+function simulateStockPrice(symbol) {
+  const seed = symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const r = ((seed * 9301 + 49297) % 233280) / 233280;
+  const basePrice = 30 + (r * 200);
+  const changePct = (Math.random() * 6 - 3);
+  const change = basePrice * changePct / 100;
+  return {
+    price: Math.round((basePrice + change) * 100) / 100,
+    change: Math.round(change * 100) / 100,
+    changePct: Math.round(changePct * 100) / 100,
+    prevClose: Math.round(basePrice * 100) / 100,
+    simulated: true
+  };
+}
+
+function getMarketStatus(market) {
+  const now = new Date();
+  const dow = now.getDay();
+  if (dow === 0 || dow === 6) return 'closed';
+  const min = now.getHours() * 60 + now.getMinutes();
+  if (market === 'us') {
+    if (min >= 21*60+30 || min < 5*60) return 'open';
+    return 'closed';
+  }
+  if (market === 'hk') {
+    if (min >= 9*60+30 && min < 16*60) return 'open';
+    return 'closed';
+  }
+  return 'closed';
+}
+
+function getMarketLabel(market) {
+  const s = getMarketStatus(market);
+  if (market === 'us') return s === 'open' ? '🟢 美股交易中' : '🔴 美股已收盘';
+  if (market === 'hk') return s === 'open' ? '🟢 港股交易中' : '🔴 港股已收盘';
+  return '';
+}
+
+// ===== Sample Funds =====
 const SAMPLE_FUNDS = [
   { code: '000071', name: '华夏恒生ETF联接A', shares: 1000, costNav: 1.4500, baseNav: 1.5234 },
   { code: '118001', name: '易方达全球成长精选A', shares: 500, costNav: 2.8900, baseNav: 3.2456 },
@@ -445,49 +703,39 @@ const SAMPLE_FUNDS = [
   { code: '005877', name: '华夏移动互联混合', shares: 900, costNav: 1.3800, baseNav: 1.5678 },
 ];
 
-// Generate realistic NAV history for sample funds
-function genNavHistory(baseNav, days = 14) {
-  const records = [];
-  const now = new Date();
-  let nav = baseNav;
+function genNavHistory(baseNav, days) {
+  const records = []; const now = new Date(); let nav = baseNav;
   for (let i = days; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    // Skip weekends
-    const dow = d.getDay();
-    if (dow === 0 || dow === 6) continue;
-    // Random daily change between -3% and +4%, skewed slightly positive
-    const change = (Math.random() * 7 - 2.5) / 100;
-    nav = nav * (1 + change);
-    records.push({ date: dateStr, nav: Math.round(nav * 10000) / 10000 });
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+    nav *= (1 + (Math.random() * 7 - 2.5) / 100);
+    records.push({ date: ds, nav: Math.round(nav * 10000) / 10000 });
   }
   return records;
 }
 
 function loadSampleData() {
-  if (funds.length > 0) {
-    if (!confirm('已有数据，加载示例会覆盖，是否继续？')) return;
-  }
+  if (funds.length > 0 && !confirm('已有数据，加载示例会覆盖，是否继续？')) return;
   funds = SAMPLE_FUNDS.map(f => ({
     id: 'sample_' + f.code,
-    code: f.code,
-    name: f.name,
-    shares: f.shares,
-    costNav: f.costNav,
-    records: genNavHistory(f.baseNav, 14)
+    code: f.code, name: f.name, shares: f.shares, costNav: f.costNav,
+    records: genNavHistory(f.baseNav, 20)
   }));
-  saveData();
-  renderAll();
+  saveData(); renderAll(); updateTimestamp();
   showToast('✅ 已加载10只热门QDII基金');
 }
 
 // ===== Helpers =====
-function fmtNum(n, d = 2) { return Number(n).toFixed(d); }
+function fmtNum(n, d) { return Number(n).toFixed(d || 2); }
 function fmtMoney(n) { return '¥' + Number(n).toFixed(2); }
-function today() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function updateTimestamp() {
+  const now = new Date();
+  const s = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('updateTime').textContent = '最后更新 ' + todayStr() + ' ' + s;
 }
 
 // ===== Calculations =====
@@ -503,47 +751,269 @@ function calcFund(f) {
   const totalPct = f.costNav ? (curNav - f.costNav) / f.costNav * 100 : 0;
   const totalAmt = f.shares * (curNav - f.costNav);
   const value = f.shares * curNav;
-
-  // Weekly performance: compare to 7 days ago NAV
-  const now = new Date();
-  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekStr = weekAgo.getFullYear() + '-' + String(weekAgo.getMonth()+1).padStart(2,'0') + '-' + String(weekAgo.getDate()).padStart(2,'0');
-  // Find the closest record to 7 days ago
-  let weekNav = f.costNav;
-  for (const r of sorted) {
-    if (r.date >= weekStr || sorted.indexOf(r) === sorted.length - 1) {
-      // Actually we want the oldest record within 7 days or the oldest overall
-    }
-  }
-  // Simple: compare to record ~7 positions back (roughly 7 trading days)
   const weekIdx = Math.min(7, sorted.length - 1);
   const weekNavVal = sorted.length > weekIdx ? sorted[weekIdx].nav : f.costNav;
   const weeklyPct = weekNavVal ? (curNav - weekNavVal) / weekNavVal * 100 : 0;
-
   return { curNav, prevNav, dailyPct, dailyAmt, totalPct, totalAmt, value, weeklyPct, hasData: true };
 }
 
 function calcSummary() {
   let totalValue = 0, totalTodayAmt = 0, totalPnlAmt = 0;
-  funds.forEach(f => {
-    const r = calcFund(f);
-    totalValue += r.value;
-    totalTodayAmt += r.dailyAmt;
-    totalPnlAmt += r.totalAmt;
-  });
+  funds.forEach(f => { const r = calcFund(f); totalValue += r.value; totalTodayAmt += r.dailyAmt; totalPnlAmt += r.totalAmt; });
   return { totalValue, totalTodayAmt, totalPnlAmt };
+}
+
+// ===== NAV Chart Drawing (Canvas) =====
+function drawNavChart(fundId) {
+  const f = funds.find(x => x.id === fundId);
+  if (!f || !f.records || f.records.length < 2) return;
+  const canvas = document.getElementById('chart_' + fundId);
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const W = container.clientWidth || 280;
+  const H = container.clientHeight || 140;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const sorted = [...f.records].sort((a,b) => a.date.localeCompare(b.date));
+  const navs = sorted.map(r => r.nav);
+  const minN = Math.min(...navs) * 0.998;
+  const maxN = Math.max(...navs) * 1.002;
+  const range = maxN - minN;
+  if (range === 0) return;
+  const pad = { top: 10, bottom: 18, left: 6, right: 6 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+  const isUp = navs[navs.length-1] >= navs[0];
+  const lineColor = isUp ? '#e74c3c' : '#00b894';
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 3; i++) {
+    const y = pad.top + (ch / 3) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W-pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#c0c0c0'; ctx.font = '8px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText((maxN - range/3*i).toFixed(4), pad.left + cw + 2, y+3);
+  }
+
+  // Area fill
+  ctx.beginPath();
+  navs.forEach((n, i) => {
+    const x = pad.left + (i/(navs.length-1))*cw;
+    const y = pad.top + (1-(n-minN)/range)*ch;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left+cw, pad.top+ch); ctx.lineTo(pad.left, pad.top+ch); ctx.closePath();
+  const gd = ctx.createLinearGradient(0, pad.top, 0, pad.top+ch);
+  gd.addColorStop(0, lineColor+'30'); gd.addColorStop(1, lineColor+'05');
+  ctx.fillStyle = gd; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle = lineColor; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  navs.forEach((n, i) => {
+    const x = pad.left + (i/(navs.length-1))*cw;
+    const y = pad.top + (1-(n-minN)/range)*ch;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // End dot + label
+  const lx = pad.left + cw;
+  const ly = pad.top + (1-(navs[navs.length-1]-minN)/range)*ch;
+  ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI*2); ctx.fillStyle = lineColor; ctx.fill();
+  ctx.fillStyle = lineColor; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText(navs[navs.length-1].toFixed(4), lx, ly-6);
+
+  // X-axis dates (first, middle, last)
+  ctx.fillStyle = '#c0c0c0'; ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+  const xLabels = [0, Math.floor(navs.length/2), navs.length-1];
+  xLabels.forEach(idx => {
+    ctx.fillText(sorted[idx].date.slice(5), pad.left + (idx/(navs.length-1))*cw, pad.top+ch+12);
+  });
+}
+
+// ===== Recommendation Algorithm =====
+function generateRecommendation(f) {
+  const r = calcFund(f);
+  if (!r.hasData || !f.records || f.records.length < 3) {
+    return { action: 'hold', label: '数据不足', reason: '请先更新净值数据', tags: [] };
+  }
+
+  const sorted = [...f.records].sort((a,b) => a.date.localeCompare(b.date));
+  const navs = sorted.map(x => x.nav);
+
+  // Moving averages
+  const ma5 = navs.slice(-5).reduce((s, n) => s+n, 0) / Math.min(5, navs.length);
+  const ma10 = navs.slice(-10).reduce((s, n) => s+n, 0) / Math.min(10, navs.length);
+  const curNav = navs[navs.length-1];
+
+  // Trend: compare to MA
+  let trendScore = 0;
+  const tags = [];
+  if (curNav > ma5 && ma5 > ma10) { trendScore += 2; tags.push({ text: '多头排列', type: 'bull' }); }
+  else if (curNav > ma5) { trendScore += 1; tags.push({ text: '短期偏强', type: 'bull' }); }
+  else if (curNav < ma5 && ma5 < ma10) { trendScore -= 2; tags.push({ text: '空头排列', type: 'bear' }); }
+  else if (curNav < ma5) { trendScore -= 1; tags.push({ text: '短期偏弱', type: 'bear' }); }
+  else tags.push({ text: '震荡整理', type: 'neutral' });
+
+  // Recent momentum (last 3 days)
+  const recentChanges = [];
+  for (let i = navs.length-1; i > 0 && recentChanges.length < 3; i--) {
+    recentChanges.push((navs[i] - navs[i-1]) / navs[i-1] * 100);
+  }
+  const avgMomentum = recentChanges.length > 0 ? recentChanges.reduce((a,b) => a+b, 0) / recentChanges.length : 0;
+  if (avgMomentum > 1) { trendScore += 1; tags.push({ text: '近3日强势', type: 'bull' }); }
+  else if (avgMomentum < -1) { trendScore -= 1; tags.push({ text: '近3日走弱', type: 'bear' }); }
+
+  // Weekly trend
+  if (r.weeklyPct > 3) { trendScore += 1; tags.push({ text: '周涨幅'+r.weeklyPct.toFixed(1)+'%', type: 'bull' }); }
+  else if (r.weeklyPct < -3) { trendScore -= 1; tags.push({ text: '周跌幅'+r.weeklyPct.toFixed(1)+'%', type: 'bear' }); }
+
+  // Position vs cost
+  if (r.totalPct > 10) tags.push({ text: '盈利丰厚', type: 'bull' });
+  else if (r.totalPct < -10) tags.push({ text: '深度套牢', type: 'bear' });
+
+  let action, label, reason;
+  if (trendScore >= 2) {
+    action = 'buy'; label = '⭐ 推荐增持';
+    reason = '净值走势强劲，均线多头排列，短期动量向上。近1周涨幅' + r.weeklyPct.toFixed(2) + '%，建议逢低加仓。';
+  } else if (trendScore >= 0) {
+    action = 'hold'; label = '📌 持有观望';
+    reason = '走势相对平稳，均线交织。近1周' + (r.weeklyPct >= 0 ? '+' : '') + r.weeklyPct.toFixed(2) + '%' + (r.weeklyPct >= 0 ? '，小幅上涨中。' : '，小幅回调，建议继续观察。');
+    if (tags.some(t => t.type === 'neutral') || tags.length === 0) {
+      reason = '净值窄幅震荡，趋势尚不明确。近1周' + (r.weeklyPct >= 0 ? '+' : '') + r.weeklyPct.toFixed(2) + '%，建议观望等待方向明确。';
+    }
+  } else {
+    action = 'sell'; label = '⚠️ 建议减持';
+    reason = '净值持续走弱，均线空头排列。近1周' + r.weeklyPct.toFixed(2) + '%，短期承压，建议减仓控制风险。';
+    if (r.totalPct < -10) reason += ' 当前累计亏损' + r.totalPct.toFixed(1) + '%，需注意止损。';
+  }
+
+  // Add holding company insight if available
+  const holdings = FUND_HOLDINGS[f.code];
+  if (holdings && holdings.length > 0) {
+    const top = holdings[0];
+    reason += ' 第一大持仓' + top.name + '（占比' + top.weight + '%）' + (getMarketStatus(top.market) === 'open' ? '当前交易中' : '为主要影响因素');
+  }
+
+  return { action, label, reason, tags: tags.slice(0, 4) };
+}
+
+// ===== Toggle Expand =====
+function toggleExpand(fundId) {
+  const detail = document.getElementById('detail_' + fundId);
+  const icon = document.getElementById('eicon_' + fundId);
+  if (!detail) return;
+
+  if (expandedFundId === fundId) {
+    detail.classList.remove('show');
+    if (icon) icon.classList.remove('open');
+    expandedFundId = null;
+    return;
+  }
+
+  // Collapse previous
+  if (expandedFundId) {
+    const prev = document.getElementById('detail_' + expandedFundId);
+    const prevIcon = document.getElementById('eicon_' + expandedFundId);
+    if (prev) prev.classList.remove('show');
+    if (prevIcon) prevIcon.classList.remove('open');
+  }
+
+  expandedFundId = fundId;
+  detail.classList.add('show');
+  if (icon) icon.classList.add('open');
+
+  // Render detail content
+  renderFundDetail(fundId);
+}
+
+function renderFundDetail(fundId) {
+  const f = funds.find(x => x.id === fundId);
+  if (!f) return;
+
+  const holdingsEl = document.getElementById('holdings_' + fundId);
+  const recommendEl = document.getElementById('recom_' + fundId);
+
+  // Draw chart (with small delay for layout)
+  setTimeout(() => drawNavChart(fundId), 50);
+
+  // Render holdings
+  if (holdingsEl) {
+    const holdings = FUND_HOLDINGS[f.code];
+    if (!holdings || holdings.length === 0) {
+      holdingsEl.innerHTML = '<div class="no-holdings">暂无持仓公司数据</div>';
+    } else {
+      const markets = [...new Set(holdings.map(h => h.market))];
+      const symbols = holdings.map(h => h.symbol);
+      holdingsEl.innerHTML = '<div style="font-size:10px;color:#999;margin-bottom:6px;">' +
+        markets.map(m => getMarketLabel(m)).join(' &nbsp;|&nbsp; ') + '</div>' +
+        '<div id="holdingsBody_' + fundId + '">' +
+        holdings.map((h, i) =>
+          '<div class="holding-row" id="hrow_'+fundId+'_'+i+'">' +
+            '<span class="holding-market '+h.market+'">'+h.market.toUpperCase()+'</span>' +
+            '<span class="holding-name">' + escHtml(h.name) + '</span>' +
+            '<span class="holding-weight">' + h.weight.toFixed(1) + '%</span>' +
+            '<span class="holding-price shimmer" style="width:60px;height:16px;display:inline-block;"></span>' +
+          '</div>'
+        ).join('') +
+        '<div id="holdingsTime_'+fundId+'"></div>' +
+        '</div>';
+
+      // Fetch prices async
+      fetchStockPrices(symbols).then(prices => {
+        holdings.forEach((h, i) => {
+          const row = document.getElementById('hrow_'+fundId+'_'+i);
+          if (!row) return;
+          const p = prices[h.symbol];
+          if (p) {
+            const priceEl = row.querySelector('.holding-price');
+            if (priceEl) {
+              const isUp = p.changePct >= 0;
+              priceEl.className = 'holding-price ' + (isUp ? 'up' : 'down');
+              priceEl.textContent = (isUp ? '+' : '') + p.changePct.toFixed(2) + '%';
+            }
+          }
+        });
+        const timeEl = document.getElementById('holdingsTime_'+fundId);
+        if (timeEl) {
+          const simulated = Object.values(prices).some(p => p && p.simulated);
+          const now = new Date();
+          const ts = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+          timeEl.innerHTML = '<div class="holding-time">' + ts + ' ' + (simulated ? '(模拟数据·API未连接)' : '(实时数据·Yahoo Finance)') + '</div>';
+        }
+      });
+    }
+  }
+
+  // Render recommendation
+  if (recommendEl) {
+    const rec = generateRecommendation(f);
+    recommendEl.innerHTML =
+      '<div class="recommend-box ' + rec.action + '">' +
+        '<div class="recommend-label">' + rec.label + '</div>' +
+        '<div class="recommend-reason">' + rec.reason + '</div>' +
+        (rec.tags.length > 0 ?
+          '<div class="recommend-tags">' +
+            rec.tags.map(t => '<span class="recommend-tag ' + t.type + '">' + escHtml(t.text) + '</span>').join('') +
+          '</div>' : '') +
+      '</div>';
+  }
 }
 
 // ===== Render =====
 function renderPortfolio() {
   const list = document.getElementById('fundList');
   const summary = calcSummary();
-
   document.getElementById('totalValue').innerHTML = '<span class="currency">¥</span>' + fmtNum(summary.totalValue);
   const td = document.getElementById('todayPnl');
   td.textContent = (summary.totalTodayAmt >= 0 ? '+' : '') + fmtNum(summary.totalTodayAmt);
   td.className = 'val' + (summary.totalTodayAmt >= 0 ? ' up' : ' down');
-
   const tp = document.getElementById('totalPnl');
   tp.textContent = (summary.totalPnlAmt >= 0 ? '+' : '') + fmtNum(summary.totalPnlAmt);
   tp.className = 'val' + (summary.totalPnlAmt >= 0 ? ' up' : ' down');
@@ -563,139 +1033,87 @@ function renderPortfolio() {
   list.innerHTML = funds.map((f, idx) => {
     const r = calcFund(f);
     const isUp = r.dailyPct >= 0;
-    return `<div class="fund-card" data-idx="${idx}" onclick="openNavModal('${f.id}')">
-      <div class="top">
-        <div>
-          <div class="name">${escHtml(f.name)} <span class="tag qdii">QDII</span></div>
-          <div class="code">${escHtml(f.code)} · 持有 ${fmtNum(f.shares)} 份 · 周 ${isUp ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div>
+    const isExpanded = expandedFundId === f.id;
+    const holdings = FUND_HOLDINGS[f.code];
+    return `<div class="fund-card">
+      <div class="fund-card-main" onclick="toggleExpand('${f.id}')">
+        <div class="top">
+          <div>
+            <div class="name">${escHtml(f.name)} <span class="tag qdii">QDII</span>${holdings ? ' <span style="font-size:9px;color:#1a73e8;">📊</span>' : ''}</div>
+            <div class="code">${escHtml(f.code)} · 持有 ${fmtNum(f.shares)} 份 · 周 ${isUp ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div>
+          </div>
+          <div class="nav-info">
+            <div class="nav-value">${fmtNum(r.curNav, 4)}</div>
+            <div class="nav-date">${r.hasData ? '最新净值' : '未更新'}</div>
+          </div>
         </div>
-        <div class="nav-info">
-          <div class="nav-value">${fmtNum(r.curNav, 4)}</div>
-          <div class="nav-date">${r.hasData ? '最新净值' : '未更新'}</div>
+        <div class="bottom">
+          <div class="stat"><div class="s-val ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${fmtNum(r.dailyPct, 2)}%</div><div class="s-lbl">今日</div></div>
+          <div class="stat"><div class="s-val ${r.totalPct >= 0 ? 'up' : 'down'}">${r.totalPct >= 0 ? '+' : ''}${fmtNum(r.totalPct, 2)}%</div><div class="s-lbl">累计</div></div>
+          <div class="stat"><div class="s-val" style="color:#333;">${fmtMoney(r.value)}</div><div class="s-lbl">持仓</div></div>
+          <div class="stat"><div class="s-val ${r.weeklyPct >= 0 ? 'up' : 'down'}">${r.weeklyPct >= 0 ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div><div class="s-lbl">周涨跌</div></div>
         </div>
+        <div class="expand-icon ${isExpanded ? 'open' : ''}" id="eicon_${f.id}">▼</div>
       </div>
-      <div class="bottom">
-        <div class="stat"><div class="s-val ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${fmtNum(r.dailyPct, 2)}%</div><div class="s-lbl">今日</div></div>
-        <div class="stat"><div class="s-val ${r.totalPct >= 0 ? 'up' : 'down'}">${r.totalPct >= 0 ? '+' : ''}${fmtNum(r.totalPct, 2)}%</div><div class="s-lbl">累计</div></div>
-        <div class="stat"><div class="s-val" style="color:#333;">${fmtMoney(r.value)}</div><div class="s-lbl">持仓</div></div>
-        <div class="stat"><div class="s-val ${r.weeklyPct >= 0 ? 'up' : 'down'}">${r.weeklyPct >= 0 ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div><div class="s-lbl">周涨跌</div></div>
+      <div class="fund-card-detail ${isExpanded ? 'show' : ''}" id="detail_${f.id}">
+        <div class="detail-section">
+          <div class="detail-title">📈 净值走势</div>
+          <div class="chart-wrap"><canvas id="chart_${f.id}"></canvas></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">📊 持仓公司</div>
+          <div class="holdings-table" id="holdings_${f.id}">
+            <div class="no-holdings" style="font-size:11px;"><span class="shimmer" style="display:inline-block;width:120px;height:14px;">&nbsp;</span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">💡 操作建议</div>
+          <div id="recom_${f.id}">
+            <div class="recommend-box hold" style="opacity:0.5;">
+              <div class="recommend-label">计算中...</div>
+              <div class="recommend-reason">请稍候</div>
+            </div>
+          </div>
+        </div>
+        <button class="detail-update-btn" onclick="event.stopPropagation();openNavModal('${f.id}')">📝 更新净值</button>
       </div>
     </div>`;
   }).join('');
+
+  // If an expanded fund exists, re-render its detail
+  if (expandedFundId && funds.some(f => f.id === expandedFundId)) {
+    renderFundDetail(expandedFundId);
+  }
 }
 
 function renderRanking() {
   const el = document.getElementById('rankList');
-  if (funds.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><p>请先添加基金</p></div>';
-    return;
-  }
-  // Sort by weekly performance descending
-  const ranked = funds.map(f => ({ ...calcFund(f), id: f.id, code: f.code, name: f.name }))
-    .sort((a, b) => b.weeklyPct - a.weeklyPct);
-
+  if (funds.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><p>请先添加基金</p></div>'; return; }
+  const ranked = funds.map(f => ({ ...calcFund(f), id: f.id, code: f.code, name: f.name })).sort((a,b) => b.weeklyPct - a.weeklyPct);
   const maxPct = Math.max(...ranked.map(r => Math.abs(r.weeklyPct)), 1);
-
   el.innerHTML = ranked.map((r, idx) => {
-    const cls = idx < 3 ? `r${idx+1}` : 'rn';
+    const cls = idx < 3 ? 'r'+(idx+1) : 'rn';
     const isUp = r.weeklyPct >= 0;
-    const barPct = Math.min(Math.abs(r.weeklyPct) / maxPct * 100, 100);
-    return `<div class="rank-card">
-      <div class="rank-num ${cls}">${idx + 1}</div>
-      <div class="rank-info">
-        <div class="rank-name">${escHtml(r.name)}</div>
-        <div class="rank-code">${r.code}</div>
-      </div>
-      <div class="rank-pct ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div>
-      <div class="rank-bar-wrap">
-        <div class="rank-bar ${isUp ? 'up' : 'down'}" style="width:${barPct}%"></div>
-      </div>
-    </div>`;
+    return `<div class="rank-card"><div class="rank-num ${cls}">${idx+1}</div><div class="rank-info"><div class="rank-name">${escHtml(r.name)}</div><div class="rank-code">${r.code}</div></div><div class="rank-pct ${isUp?'up':'down'}">${isUp?'+':''}${fmtNum(r.weeklyPct,2)}%</div><div class="rank-bar-wrap"><div class="rank-bar ${isUp?'up':'down'}" style="width:${Math.min(Math.abs(r.weeklyPct)/maxPct*100,100)}%"></div></div></div>`;
   }).join('');
 }
 
 function renderRotate() {
   const el = document.getElementById('rotateContent');
-  if (funds.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>请先添加基金</p></div>';
-    return;
-  }
-  if (funds.length < 3) {
-    el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>至少需要3只基金才能给出调仓建议</p></div>';
-    return;
-  }
-
-  const ranked = funds.map(f => ({ ...calcFund(f), id: f.id, code: f.code, name: f.name, shares: f.shares }))
-    .sort((a, b) => b.weeklyPct - a.weeklyPct);
-
-  const top3 = ranked.slice(0, 3);
+  if (funds.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>请先添加基金</p></div>'; return; }
+  if (funds.length < 3) { el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>至少需要3只基金才能给出调仓建议</p></div>'; return; }
+  const ranked = funds.map(f => ({ ...calcFund(f), id: f.id, code: f.code, name: f.name, shares: f.shares })).sort((a,b) => b.weeklyPct - a.weeklyPct);
+  const top3 = ranked.slice(0,3);
   const bottom3 = ranked.slice(-3).reverse();
-
-  // Calculate average holdings value for suggestion amounts
-  const avgValue = ranked.reduce((s, r) => s + r.value, 0) / ranked.length;
-
+  const mid = ranked.slice(3, -3);
   el.innerHTML = `
-    <div class="rotate-card">
-      <div class="rotate-header">
-        <span class="rotate-icon">🟢</span>
-        <div>
-          <div class="rotate-title">推荐调入 ⬆️ 本周最强</div>
-          <div class="rotate-desc">近7日涨幅最高，建议持有或加仓</div>
-        </div>
-      </div>
-      ${top3.map(r => `
-        <div class="rotate-fund">
-          <div>
-            <div class="rf-name">${escHtml(r.name)} <span class="rotate-badge buy">调入</span></div>
-            <div class="rf-code">${r.code}</div>
-          </div>
-          <div class="rf-pct up">+${fmtNum(r.weeklyPct, 2)}%</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="rotate-card">
-      <div class="rotate-header">
-        <span class="rotate-icon">🔴</span>
-        <div>
-          <div class="rotate-title">建议调出 ⬇️ 本周最弱</div>
-          <div class="rotate-desc">近7日涨幅最低，建议卖出换仓</div>
-        </div>
-      </div>
-      ${bottom3.map(r => `
-        <div class="rotate-fund">
-          <div>
-            <div class="rf-name">${escHtml(r.name)} <span class="rotate-badge sell">调出</span></div>
-            <div class="rf-code">${r.code}</div>
-          </div>
-          <div class="rf-pct down">${fmtNum(r.weeklyPct, 2)}%</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="rotate-card">
-      <div class="rotate-header">
-        <span class="rotate-icon">⚪</span>
-        <div>
-          <div class="rotate-title">持有观望 👀 中位表现</div>
-          <div class="rotate-desc">表现居中，建议继续持有观察</div>
-        </div>
-      </div>
-      ${ranked.slice(3, -3).map(r => `
-        <div class="rotate-fund">
-          <div>
-            <div class="rf-name">${escHtml(r.name)} <span class="rotate-badge hold">持有</span></div>
-            <div class="rf-code">${r.code}</div>
-          </div>
-          <div class="rf-pct ${r.weeklyPct >= 0 ? 'up' : 'down'}">${r.weeklyPct >= 0 ? '+' : ''}${fmtNum(r.weeklyPct, 2)}%</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div style="font-size:11px;color:#ccc;text-align:center;padding:8px;">
-      基于近7日涨跌幅排名，建议每周一参考调仓 · 数据仅供参考
-    </div>
-  `;
+    <div class="rotate-card"><div class="rotate-header"><span class="rotate-icon">🟢</span><div><div class="rotate-title">推荐调入 ⬆️ 本周最强</div><div class="rotate-desc">近7日涨幅最高</div></div></div>
+      ${top3.map(r => '<div class="rotate-fund"><div><div class="rf-name">'+escHtml(r.name)+' <span class="rotate-badge buy">调入</span></div><div class="rf-code">'+r.code+'</div></div><div class="rf-pct up">+'+fmtNum(r.weeklyPct,2)+'%</div></div>').join('')}</div>
+    <div class="rotate-card"><div class="rotate-header"><span class="rotate-icon">🔴</span><div><div class="rotate-title">建议调出 ⬇️ 本周最弱</div><div class="rotate-desc">近7日涨幅最低，建议卖出换仓</div></div></div>
+      ${bottom3.map(r => '<div class="rotate-fund"><div><div class="rf-name">'+escHtml(r.name)+' <span class="rotate-badge sell">调出</span></div><div class="rf-code">'+r.code+'</div></div><div class="rf-pct down">'+fmtNum(r.weeklyPct,2)+'%</div></div>').join('')}</div>
+    <div class="rotate-card"><div class="rotate-header"><span class="rotate-icon">⚪</span><div><div class="rotate-title">持有观望 👀</div><div class="rotate-desc">表现居中，建议继续持有</div></div></div>
+      ${mid.map(r => '<div class="rotate-fund"><div><div class="rf-name">'+escHtml(r.name)+' <span class="rotate-badge hold">持有</span></div><div class="rf-code">'+r.code+'</div></div><div class="rf-pct '+(r.weeklyPct>=0?'up':'down')+'">'+(r.weeklyPct>=0?'+':'')+fmtNum(r.weeklyPct,2)+'%</div></div>').join('')}</div>
+    <div style="font-size:11px;color:#ccc;text-align:center;padding:8px;">基于近7日涨跌幅排名，建议每周一参考调仓 · 数据仅供参考</div>`;
 }
 
 function renderAll() {
@@ -704,10 +1122,32 @@ function renderAll() {
   renderRotate();
 }
 
-function escHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+// ===== Force Refresh =====
+async function forceRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  btn.textContent = '⏳';
+  showToast('🔄 强制刷新中...');
+
+  // Clear stock cache
+  Object.keys(stockCache).forEach(k => delete stockCache[k]);
+
+  // Re-fetch all stock prices for all holdings
+  const allSymbols = [...new Set(funds.flatMap(f => {
+    const h = FUND_HOLDINGS[f.code];
+    return h ? h.map(x => x.symbol) : [];
+  }))];
+
+  if (allSymbols.length > 0) {
+    await fetchStockPrices(allSymbols);
+  }
+
+  // Re-render
+  renderAll();
+  updateTimestamp();
+  btn.textContent = '↻';
+  btn.classList.remove('spinning');
+  showToast('✅ 已强制刷新，数据已更新');
 }
 
 // ===== CRUD =====
@@ -716,20 +1156,18 @@ function addFund(code, name, shares, costNav, curNav) {
   shares = parseFloat(shares); costNav = parseFloat(costNav);
   curNav = curNav ? parseFloat(curNav) : costNav;
   if (shares <= 0 || costNav <= 0 || curNav <= 0) return false;
-  const fund = {
+  funds.push({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     code: code.trim(), name: name.trim(), shares, costNav,
-    records: [{ date: today(), nav: curNav }]
-  };
-  funds.push(fund);
-  saveData(); renderAll();
-  return true;
+    records: [{ date: todayStr(), nav: curNav }]
+  });
+  saveData(); renderAll(); return true;
 }
 
 function updateNav(fundId, newNav) {
   const f = funds.find(x => x.id === fundId);
   if (!f) return false;
-  const ts = today();
+  const ts = todayStr();
   const idx = f.records.findIndex(r => r.date === ts);
   if (idx >= 0) f.records[idx].nav = newNav;
   else f.records.unshift({ date: ts, nav: newNav });
@@ -739,15 +1177,16 @@ function updateNav(fundId, newNav) {
 
 function deleteFund(fundId) {
   funds = funds.filter(f => f.id !== fundId);
+  if (expandedFundId === fundId) expandedFundId = null;
   saveData(); renderAll();
 }
 
 // ===== UI =====
-function showToast(msg, dur = 1500) {
+function showToast(msg, dur) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(t._hide);
-  t._hide = setTimeout(() => t.classList.remove('show'), dur);
+  t._hide = setTimeout(() => t.classList.remove('show'), dur || 1500);
 }
 
 function openNavModal(fundId) {
@@ -763,26 +1202,22 @@ function openNavModal(fundId) {
   document.getElementById('navModal').classList.add('show');
 }
 
-// Tab switching
+// ===== Event Bindings =====
 document.querySelectorAll('.tab-item').forEach(item => {
   item.addEventListener('click', function() {
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     this.classList.add('active');
     document.getElementById(this.dataset.tab).classList.add('active');
-    // Show FAB only on portfolio tab
     document.getElementById('addBtn').style.display = this.dataset.tab === 'tabPortfolio' && funds.length > 0 ? 'flex' : 'none';
-    // Refresh views
     if (this.dataset.tab === 'tabRanking') renderRanking();
     if (this.dataset.tab === 'tabRotate') renderRotate();
   });
 });
 
-// Close modals
 document.getElementById('addModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
 document.getElementById('navModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
 
-// ===== Event Bindings =====
 document.getElementById('addBtn').addEventListener('click', () => {
   ['fCode','fName','fShares','fCost','fNav'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('addModal').classList.add('show');
@@ -790,18 +1225,13 @@ document.getElementById('addBtn').addEventListener('click', () => {
 });
 document.getElementById('addCancel').addEventListener('click', () => document.getElementById('addModal').classList.remove('show'));
 document.getElementById('addSubmit').addEventListener('click', () => {
-  const code = document.getElementById('fCode').value;
-  const name = document.getElementById('fName').value;
-  const shares = document.getElementById('fShares').value;
-  const cost = document.getElementById('fCost').value;
-  const nav = document.getElementById('fNav').value;
+  const [code, name, shares, cost, nav] = ['fCode','fName','fShares','fCost','fNav'].map(id => document.getElementById(id).value);
   if (!code || !name || !shares || !cost) { showToast('请填写完整信息'); return; }
   if (addFund(code, name, shares, cost, nav)) {
     document.getElementById('addModal').classList.remove('show');
     showToast('✅ 添加成功');
   } else showToast('请检查输入数据');
 });
-
 document.getElementById('navCancel').addEventListener('click', () => document.getElementById('navModal').classList.remove('show'));
 document.getElementById('navSubmit').addEventListener('click', () => {
   const v = document.getElementById('navNew').value;
@@ -815,26 +1245,19 @@ document.getElementById('navEstPct').addEventListener('input', function() {
   const pct = parseFloat(this.value);
   if (!isNaN(pct) && updateTargetId) {
     const f = funds.find(x => x.id === updateTargetId);
-    if (f) {
-      const r = calcFund(f);
-      const est = r.curNav * (1 + pct / 100);
-      document.getElementById('navEstResult').value = est.toFixed(4);
-      document.getElementById('navNew').value = est.toFixed(4);
-    }
+    if (f) { const r = calcFund(f); const est = r.curNav * (1+pct/100); document.getElementById('navEstResult').value = est.toFixed(4); document.getElementById('navNew').value = est.toFixed(4); }
   } else document.getElementById('navEstResult').value = '';
 });
 
 // Long press delete
 let longPressTimer = null;
 document.getElementById('fundList').addEventListener('touchstart', function(e) {
-  const card = e.target.closest('.fund-card');
+  const card = e.target.closest('.fund-card-main');
   if (!card || document.querySelector('.confirm-bar.show')) return;
   longPressTimer = setTimeout(() => {
-    const idx = card.dataset.idx;
-    if (idx !== undefined) {
-      const f = funds[parseInt(idx)];
-      if (f) { deleteTargetId = f.id; document.getElementById('confirmBar').classList.add('show'); document.querySelector('.confirm-bar .btn-yes').textContent = '删除 ' + f.name; }
-    }
+    const idx = card.closest('.fund-card').dataset.idx;
+    const f = funds[parseInt(idx)];
+    if (f) { deleteTargetId = f.id; document.getElementById('confirmBar').classList.add('show'); document.querySelector('.confirm-bar .btn-yes').textContent = '删除 ' + f.name; }
   }, 600);
 });
 document.getElementById('fundList').addEventListener('touchend', () => clearTimeout(longPressTimer));
@@ -845,15 +1268,22 @@ document.getElementById('confirmDelete').addEventListener('click', () => { if (d
 document.getElementById('manageBtn').addEventListener('click', function() {
   const on = this.textContent === '管理';
   this.textContent = on ? '完成' : '管理';
-  document.querySelectorAll('.fund-card').forEach(c => c.classList.toggle('show-delete', on));
 });
 document.getElementById('rankRefresh').addEventListener('click', () => { renderRanking(); showToast('已刷新'); });
 document.getElementById('rotateRefresh').addEventListener('click', () => { renderRotate(); showToast('已刷新'); });
 
+// Desktop click on fund cards
+document.getElementById('fundList').addEventListener('click', function(e) {
+  const main = e.target.closest('.fund-card-main');
+  if (main) {
+    const card = main.closest('.fund-card');
+    // The onclick on fund-card-main handles toggleExpand
+  }
+});
+
 // ===== Init =====
 loadData();
 if (funds.length === 0) {
-  // Offer sample data
   const list = document.getElementById('fundList');
   list.innerHTML = `<div class="empty-state">
     <div class="icon">📥</div>
@@ -864,17 +1294,18 @@ if (funds.length === 0) {
 } else {
   renderAll();
 }
+updateTimestamp();
 
-// Click on fund cards also works for desktop (not just touch)
-document.getElementById('fundList').addEventListener('click', function(e) {
-  const card = e.target.closest('.fund-card');
-  if (card) {
-    const idx = card.dataset.idx;
-    if (idx !== undefined) {
-      const f = funds[parseInt(idx)];
-      if (f) openNavModal(f.id);
-    }
+// Auto-refresh stock prices every 2 minutes
+setInterval(() => {
+  if (funds.length > 0 && expandedFundId) {
+    renderFundDetail(expandedFundId);
   }
+}, 120000);
+
+// Handle window resize for charts
+window.addEventListener('resize', () => {
+  if (expandedFundId) drawNavChart(expandedFundId);
 });
 </script>
 </body>
