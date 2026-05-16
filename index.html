@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>基金估值小助手</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -326,7 +329,7 @@ body {
     <div class="header-title">📊 基金估值小助手</div>
     <button class="refresh-btn" id="refreshBtn" onclick="forceRefresh()">↻</button>
   </div>
-  <div class="header-sub">QDII + 国内基金 · 实时行情 · 真实数据</div>
+  <div class="header-sub">QDII + 国内基金 · 实时行情 · 真实数据 <span id="buildBadge" style="font-size:8px;opacity:0.4;font-weight:400;"></span></div>
   <div class="header-update" id="updateTime">--</div>
   <div class="header-loading" id="headerLoading">⏳ 更新净值数据中...</div>
 </div>
@@ -444,6 +447,10 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
+// ===== Version =====
+const BUILD_VER = '2026.05.16-1';
+const BUILD_TS = 1652700000000;
+
 // ===== Data =====
 const STORAGE_KEY = 'fund_helper_data';
 const NAV_CACHE_KEY = 'fund_helper_nav_cache';
@@ -1600,6 +1607,15 @@ document.getElementById('rotateRefresh').addEventListener('click', () => { rende
 
 // ===== Init =====
 loadData();
+document.getElementById('buildBadge').textContent = 'v' + BUILD_VER;
+// Check if cached page is stale compared to build time
+try {
+  const cachedTime = parseInt(localStorage.getItem('fund_helper_first_visit') || '0');
+  if (cachedTime > 0 && cachedTime < BUILD_TS) {
+    console.log('[Version] Page updated since last visit, browser may show stale cache');
+  }
+  if (cachedTime === 0) localStorage.setItem('fund_helper_first_visit', String(BUILD_TS));
+} catch(e) {}
 if (funds.length === 0) {
   document.getElementById('fundList').innerHTML = '<div class="empty-state"><div class="icon">📥</div><p>首次使用，是否加载<br>15只热门基金真实净值数据？</p><button class="btn-empty" onclick="loadSampleData()">📥 加载真实数据</button><button class="btn-empty" onclick="document.getElementById(\'addModal\').classList.add(\'show\')" style="background:#999;margin-top:6px;">✏️ 手动添加</button></div>';
 } else { renderAll(); autoUpdateNAVs(false); }
