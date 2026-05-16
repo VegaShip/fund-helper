@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>基金估值助手</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f5f6fa;
+  min-height: 100vh; min-height: 100dvh;
+  overflow-x: hidden;
+  padding-bottom: 80px;
+}
+
+/* ===== Header ===== */
+.header {
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  color: #fff;
+  padding: 20px 16px 16px;
+  position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 2px 12px rgba(26,115,232,0.3);
+}
+.header-title { font-size: 18px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+.header-sub { font-size: 11px; text-align: center; opacity: 0.7; margin-top: 2px; }
+
+/* ===== Summary Card ===== */
+.summary {
+  margin: -12px 12px 10px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  position: relative; z-index: 2;
+}
+.summary-row { display: flex; justify-content: space-between; align-items: baseline; }
+.summary-label { font-size: 12px; color: #999; }
+.summary-value { font-size: 24px; font-weight: 800; color: #333; }
+.summary-value .currency { font-size: 14px; font-weight: 600; }
+.summary-details { display: flex; gap: 0; margin-top: 10px; }
+.summary-item { flex: 1; text-align: center; border-right: 1px solid #f0f0f0; }
+.summary-item:last-child { border-right: none; }
+.summary-item .val { font-size: 16px; font-weight: 700; }
+.summary-item .val.up { color: #e74c3c; }
+.summary-item .val.down { color: #00b894; }
+.summary-item .lbl { font-size: 11px; color: #999; margin-top: 2px; }
+
+/* ===== Section ===== */
+.section { padding: 0 12px; margin-top: 4px; }
+.section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 4px; margin-bottom: 2px;
+}
+.section-title { font-size: 14px; font-weight: 700; color: #333; }
+.section-action { font-size: 12px; color: #1a73e8; font-weight: 600; cursor: pointer; padding: 4px 8px; }
+
+/* ===== Fund Card ===== */
+.fund-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.fund-card:active { transform: scale(0.98); }
+.fund-card .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.fund-card .name { font-size: 15px; font-weight: 700; color: #333; }
+.fund-card .code { font-size: 11px; color: #999; margin-top: 1px; }
+.fund-card .tag {
+  display: inline-block; font-size: 9px; padding: 1px 6px;
+  border-radius: 4px; background: #e8f0fe; color: #1a73e8; font-weight: 600;
+  margin-left: 4px; vertical-align: middle;
+}
+.fund-card .nav-info { text-align: right; }
+.fund-card .nav-value { font-size: 18px; font-weight: 800; color: #333; }
+.fund-card .nav-date { font-size: 10px; color: #bbb; margin-top: 1px; }
+
+.fund-card .bottom { display: flex; margin-top: 10px; gap: 0; }
+.fund-card .stat { flex: 1; text-align: center; border-right: 1px solid #f5f5f5; }
+.fund-card .stat:last-child { border-right: none; }
+.fund-card .stat .s-val { font-size: 13px; font-weight: 700; }
+.fund-card .stat .s-val.up { color: #e74c3c; }
+.fund-card .stat .s-val.down { color: #00b894; }
+.fund-card .stat .s-lbl { font-size: 10px; color: #bbb; margin-top: 1px; }
+
+.fund-card .delete-area {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 60px; background: #e74c3c; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  transform: translateX(100%); transition: transform 0.2s;
+}
+.fund-card.show-delete .delete-area { transform: translateX(0); }
+.fund-card.show-delete { padding-right: 76px; }
+
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center; padding: 48px 20px; color: #ccc;
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* ===== FAB ===== */
+.fab {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #1a73e8, #1557b0);
+  color: #fff; border: none; font-size: 28px; font-weight: 300;
+  box-shadow: 0 4px 20px rgba(26,115,232,0.4);
+  cursor: pointer; z-index: 20;
+  transition: transform 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.fab:active { transform: translateX(-50%) scale(0.92); }
+.fab-label {
+  position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #999; z-index: 20;
+  white-space: nowrap;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 100; display: none;
+  justify-content: flex-end; align-items: center;
+  flex-direction: column;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.show { display: flex; }
+.modal-overlay.show .modal-sheet { animation: slideUp 0.3s ease-out; }
+@keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+
+.modal-sheet {
+  background: #fff; width: 100%; max-width: 500px;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(env(safe-area-inset-bottom, 16px) + 16px);
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px; background: #ddd;
+  margin: 0 auto 16px;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: #333; text-align: center; margin-bottom: 16px; }
+
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 12px; color: #888; font-weight: 600; margin-bottom: 4px; }
+.form-input {
+  width: 100%; height: 42px;
+  border: 1.5px solid #e8e8e8; border-radius: 10px;
+  padding: 0 12px; font-size: 15px; font-family: inherit;
+  outline: none; transition: border-color 0.2s;
+  background: #fafafa;
+}
+.form-input:focus { border-color: #1a73e8; background: #fff; }
+.form-input::placeholder { color: #ccc; }
+
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+
+.form-hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+.btn-submit {
+  width: 100%; height: 44px;
+  background: linear-gradient(135deg, #1a73e8, #1557b0);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+}
+.btn-submit:active { opacity: 0.85; }
+.btn-cancel {
+  width: 100%; height: 40px;
+  background: none; color: #999; border: none;
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; margin-top: 6px;
+}
+
+/* Delete confirm bar */
+.confirm-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 30; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+  background: #fff; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  justify-content: space-between; gap: 10px;
+}
+.confirm-bar.show { display: flex; }
+.confirm-bar .btn { flex: 1; height: 44px; border-radius: 10px; border: none; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.confirm-bar .btn-yes { background: #e74c3c; color: #fff; }
+.confirm-bar .btn-no { background: #f5f5f5; color: #666; }
+.confirm-bar .btn:active { opacity: 0.8; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 200;
+  background: rgba(0,0,0,0.75);
+  color: #fff; padding: 14px 24px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.25s;
+}
+.toast.show { opacity: 1; }
+
+/* ===== Responsive ===== */
+@media (min-width: 500px) {
+  .summary, .section { max-width: 480px; margin-left: auto; margin-right: auto; }
+  .header { padding-left: calc(50vw - 240px); padding-right: calc(50vw - 240px); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">📊 QDII 基金估值助手</div>
+  <div class="header-sub">自主添加 · 每日估值 · 涨跌一目了然</div>
+</div>
+
+<div class="summary" id="summary">
+  <div class="summary-row">
+    <span class="summary-label">总持仓金额</span>
+    <span class="summary-value" id="totalValue"><span class="currency">¥</span>0.00</span>
+  </div>
+  <div class="summary-details">
+    <div class="summary-item">
+      <div class="val" id="todayPnl">--</div>
+      <div class="lbl">今日收益</div>
+    </div>
+    <div class="summary-item">
+      <div class="val" id="totalPnl">--</div>
+      <div class="lbl">累计收益</div>
+    </div>
+    <div class="summary-item">
+      <div class="val" id="fundCount">0</div>
+      <div class="lbl">持有基金</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">我的基金</span>
+    <span class="section-action" id="manageBtn">管理</span>
+  </div>
+  <div id="fundList"></div>
+</div>
+
+<button class="fab" id="addBtn">+</button>
+<div class="fab-label">添加基金</div>
+
+<!-- Delete Confirm Bar -->
+<div class="confirm-bar" id="confirmBar">
+  <button class="btn btn-no" id="cancelDelete">取消</button>
+  <button class="btn btn-yes" id="confirmDelete">删除</button>
+</div>
+
+<!-- Add Fund Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">添加基金</div>
+    <div class="form-group">
+      <label class="form-label">基金代码</label>
+      <input class="form-input" id="fCode" placeholder="如 000071" inputmode="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">基金名称</label>
+      <input class="form-input" id="fName" placeholder="如 华夏恒生ETF联接" inputmode="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">持有份额</label>
+        <input class="form-input" id="fShares" placeholder="0.00" inputmode="decimal" type="number" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">成本净值</label>
+        <input class="form-input" id="fCost" placeholder="0.0000" inputmode="decimal" type="number" step="0.0001">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">当前净值 <span style="color:#ccc;font-weight:400;">（可选，留空则与成本价相同）</span></label>
+      <input class="form-input" id="fNav" placeholder="留空则与成本价相同" inputmode="decimal" type="number" step="0.0001">
+    </div>
+    <button class="btn-submit" id="addSubmit">添加</button>
+    <button class="btn-cancel" id="addCancel">取消</button>
+  </div>
+</div>
+
+<!-- Update NAV Modal -->
+<div class="modal-overlay" id="navModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="navModalTitle">更新净值</div>
+    <div style="display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:12px;">
+      <span style="font-size:13px;color:#999;">当前净值</span>
+      <span style="font-size:22px;font-weight:800;color:#333;" id="navCurrentDisplay">--</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">新净值</label>
+      <input class="form-input" id="navNew" placeholder="输入最新净值" inputmode="decimal" type="number" step="0.0001">
+    </div>
+    <div style="text-align:center;color:#ccc;font-size:12px;margin:-6px 0 12px;">— 或 —</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">估算涨跌 %</label>
+        <input class="form-input" id="navEstPct" placeholder="如 2.5" inputmode="decimal" type="number" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">得出净值</label>
+        <input class="form-input" id="navEstResult" readonly style="background:#f5f5f5;color:#333;font-weight:700;">
+      </div>
+    </div>
+    <button class="btn-submit" id="navSubmit">更新净值</button>
+    <button class="btn-cancel" id="navCancel">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Data =====
+const STORAGE_KEY = 'fund_helper_data';
+let funds = [];
+let deleteTargetId = null;
+let updateTargetId = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) funds = JSON.parse(raw);
+  } catch(e) { funds = []; }
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(funds));
+}
+
+// ===== Helpers =====
+function fmtNum(n, d = 2) { return Number(n).toFixed(d); }
+function fmtMoney(n) { return '¥' + Number(n).toFixed(2); }
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ===== Calculations =====
+function calcFund(f) {
+  if (!f.records || f.records.length === 0) {
+    return { curNav: f.costNav, prevNav: f.costNav, dailyPct: 0, dailyAmt: 0, totalPct: 0, totalAmt: 0, value: f.shares * f.costNav, hasData: false };
+  }
+  const sorted = [...f.records].sort((a,b) => a.date > b.date ? -1 : 1);
+  const curNav = sorted[0].nav;
+  const prevNav = sorted.length > 1 ? sorted[1].nav : f.costNav;
+  const dailyPct = prevNav ? (curNav - prevNav) / prevNav * 100 : 0;
+  const dailyAmt = f.shares * (curNav - prevNav);
+  const totalPct = f.costNav ? (curNav - f.costNav) / f.costNav * 100 : 0;
+  const totalAmt = f.shares * (curNav - f.costNav);
+  const value = f.shares * curNav;
+  return { curNav, prevNav, dailyPct, dailyAmt, totalPct, totalAmt, value, hasData: true };
+}
+
+function calcSummary() {
+  let totalValue = 0, totalTodayAmt = 0, totalTodayCost = 0, totalPnlAmt = 0;
+  funds.forEach(f => {
+    const r = calcFund(f);
+    totalValue += r.value;
+    totalTodayAmt += r.dailyAmt;
+    totalPnlAmt += r.totalAmt;
+  });
+  return {
+    totalValue,
+    totalTodayAmt,
+    totalTodayPct: totalValue - totalTodayAmt > 0 ? totalTodayAmt / (totalValue - totalTodayAmt) * 100 : 0,
+    totalPnlAmt,
+    totalPnlPct: funds.reduce((sum, f) => {
+      const r = calcFund(f);
+      return sum + r.totalPct;
+    }, 0) / (funds.length || 1)
+  };
+}
+
+// ===== Render =====
+function render() {
+  const list = document.getElementById('fundList');
+  const summary = calcSummary();
+
+  // Summary
+  document.getElementById('totalValue').innerHTML = '<span class="currency">¥</span>' + fmtNum(summary.totalValue);
+  const todayEl = document.getElementById('todayPnl');
+  const todayAmt = summary.totalTodayAmt;
+  todayEl.textContent = (todayAmt >= 0 ? '+' : '') + fmtNum(todayAmt);
+  todayEl.className = 'val' + (todayAmt >= 0 ? ' up' : ' down');
+
+  const totalEl = document.getElementById('totalPnl');
+  const totalAmt = summary.totalPnlAmt;
+  totalEl.textContent = (totalAmt >= 0 ? '+' : '') + fmtNum(totalAmt);
+  totalEl.className = 'val' + (totalAmt >= 0 ? ' up' : ' down');
+
+  document.getElementById('fundCount').textContent = funds.length;
+
+  // List
+  if (funds.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>还没有添加基金<br>点击下方 + 按钮添加</p></div>';
+    return;
+  }
+
+  list.innerHTML = funds.map((f, idx) => {
+    const r = calcFund(f);
+    const isUp = r.dailyPct >= 0;
+    return `<div class="fund-card" data-idx="${idx}" onclick="openNavModal('${f.id}')">
+      <div class="top">
+        <div>
+          <div class="name">${escHtml(f.name)} <span class="tag">QDII</span></div>
+          <div class="code">${escHtml(f.code)} · 持有 ${fmtNum(f.shares)} 份</div>
+        </div>
+        <div class="nav-info">
+          <div class="nav-value">${fmtNum(r.curNav, 4)}</div>
+          <div class="nav-date">${r.hasData ? '最新净值' : '未更新'}</div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="stat">
+          <div class="s-val ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${fmtNum(r.dailyPct, 2)}%</div>
+          <div class="s-lbl">今日涨跌</div>
+        </div>
+        <div class="stat">
+          <div class="s-val ${r.totalPct >= 0 ? 'up' : 'down'}">${r.totalPct >= 0 ? '+' : ''}${fmtNum(r.totalPct, 2)}%</div>
+          <div class="s-lbl">累计收益</div>
+        </div>
+        <div class="stat">
+          <div class="s-val" style="color:#333;">${fmtMoney(r.value)}</div>
+          <div class="s-lbl">持仓金额</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ===== CRUD =====
+function addFund(code, name, shares, costNav, curNav) {
+  if (!code || !name || !shares || !costNav) return false;
+  shares = parseFloat(shares);
+  costNav = parseFloat(costNav);
+  curNav = curNav ? parseFloat(curNav) : costNav;
+  if (shares <= 0 || costNav <= 0 || curNav <= 0) return false;
+
+  const fund = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    code: code.trim(),
+    name: name.trim(),
+    shares,
+    costNav,
+    records: [{ date: today(), nav: curNav }]
+  };
+  funds.push(fund);
+  saveData();
+  render();
+  return true;
+}
+
+function updateNav(fundId, newNav) {
+  const f = funds.find(x => x.id === fundId);
+  if (!f) return false;
+  const todayStr = today();
+
+  // Check if already updated today
+  const existingIdx = f.records.findIndex(r => r.date === todayStr);
+  if (existingIdx >= 0) {
+    f.records[existingIdx].nav = newNav;
+  } else {
+    f.records.unshift({ date: todayStr, nav: newNav });
+  }
+  saveData();
+  render();
+  return true;
+}
+
+function deleteFund(fundId) {
+  funds = funds.filter(f => f.id !== fundId);
+  saveData();
+  render();
+}
+
+// ===== UI =====
+function showToast(msg, duration = 1500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function openNavModal(fundId) {
+  updateTargetId = fundId;
+  const f = funds.find(x => x.id === fundId);
+  if (!f) return;
+  document.getElementById('navModalTitle').textContent = f.name;
+  const r = calcFund(f);
+  document.getElementById('navCurrentDisplay').textContent = fmtNum(r.curNav, 4);
+  document.getElementById('navNew').value = '';
+  document.getElementById('navEstPct').value = '';
+  document.getElementById('navEstResult').value = '';
+  document.getElementById('navModal').classList.add('show');
+}
+
+// Close modals on overlay click
+document.getElementById('addModal').addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('show'); }
+});
+document.getElementById('navModal').addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('show'); }
+});
+
+// ===== Event Bindings =====
+
+// Add fund
+document.getElementById('addBtn').addEventListener('click', () => {
+  document.getElementById('fCode').value = '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fShares').value = '';
+  document.getElementById('fCost').value = '';
+  document.getElementById('fNav').value = '';
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(() => document.getElementById('fCode').focus(), 350);
+});
+
+document.getElementById('addCancel').addEventListener('click', () => {
+  document.getElementById('addModal').classList.remove('show');
+});
+
+document.getElementById('addSubmit').addEventListener('click', () => {
+  const code = document.getElementById('fCode').value;
+  const name = document.getElementById('fName').value;
+  const shares = document.getElementById('fShares').value;
+  const cost = document.getElementById('fCost').value;
+  const nav = document.getElementById('fNav').value;
+  if (!code || !name || !shares || !cost) {
+    showToast('请填写完整信息');
+    return;
+  }
+  if (addFund(code, name, shares, cost, nav)) {
+    document.getElementById('addModal').classList.remove('show');
+    showToast('✅ 添加成功');
+  } else {
+    showToast('请检查输入数据');
+  }
+});
+
+// Update NAV
+document.getElementById('navCancel').addEventListener('click', () => {
+  document.getElementById('navModal').classList.remove('show');
+});
+
+document.getElementById('navSubmit').addEventListener('click', () => {
+  const newNav = document.getElementById('navNew').value;
+  if (!newNav) {
+    showToast('请输入净值');
+    return;
+  }
+  if (updateNav(updateTargetId, parseFloat(newNav))) {
+    document.getElementById('navModal').classList.remove('show');
+    showToast('✅ 净值已更新');
+  }
+});
+
+// Estimate NAV from percentage
+document.getElementById('navEstPct').addEventListener('input', function() {
+  const pct = parseFloat(this.value);
+  if (!isNaN(pct) && updateTargetId) {
+    const f = funds.find(x => x.id === updateTargetId);
+    if (f) {
+      const r = calcFund(f);
+      const estimated = r.curNav * (1 + pct / 100);
+      document.getElementById('navEstResult').value = estimated.toFixed(4);
+      document.getElementById('navNew').value = estimated.toFixed(4);
+    }
+  } else {
+    document.getElementById('navEstResult').value = '';
+  }
+});
+
+// Delete fund (long press → confirm bar)
+let longPressTimer = null;
+document.getElementById('fundList').addEventListener('touchstart', function(e) {
+  const card = e.target.closest('.fund-card');
+  if (!card) return;
+  if (document.querySelector('.confirm-bar.show')) return;
+  longPressTimer = setTimeout(() => {
+    const idx = card.dataset.idx;
+    if (idx !== undefined) {
+      const f = funds[parseInt(idx)];
+      if (f) {
+        deleteTargetId = f.id;
+        document.getElementById('confirmBar').classList.add('show');
+        document.querySelector('.confirm-bar .btn-yes').textContent = '删除 ' + f.name;
+      }
+    }
+  }, 600);
+});
+document.getElementById('fundList').addEventListener('touchend', () => {
+  clearTimeout(longPressTimer);
+});
+document.getElementById('fundList').addEventListener('touchmove', () => {
+  clearTimeout(longPressTimer);
+});
+
+document.getElementById('cancelDelete').addEventListener('click', () => {
+  document.getElementById('confirmBar').classList.remove('show');
+  deleteTargetId = null;
+});
+document.getElementById('confirmDelete').addEventListener('click', () => {
+  if (deleteTargetId) {
+    deleteFund(deleteTargetId);
+    showToast('已删除');
+  }
+  document.getElementById('confirmBar').classList.remove('show');
+  deleteTargetId = null;
+});
+
+// Manage toggle - show delete hint
+let isManageMode = false;
+document.getElementById('manageBtn').addEventListener('click', function() {
+  isManageMode = !isManageMode;
+  this.textContent = isManageMode ? '完成' : '管理';
+  document.querySelectorAll('.fund-card').forEach(c => c.classList.toggle('show-delete', isManageMode));
+});
+
+// ===== Init =====
+loadData();
+render();
+</script>
+</body>
+</html>
