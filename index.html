@@ -661,7 +661,7 @@ function fetchSinaIndex(symbol) {
     const globalKey = 'hq_str_' + symbol;
     delete window[globalKey];
     const sc = document.createElement('script');
-    sc.src = 'https://hq.sinajs.cn/list=' + symbol;
+    sc.src = 'https://hq.sinajs.cn/list=' + symbol + '&_=' + Date.now();
     let resolved = false;
     sc.onload = () => {
       if (resolved) return;
@@ -767,25 +767,45 @@ async function fetchIndices() {
   return results;
 }
 
+function renderIndexCards(data, source) {
+  const el = document.getElementById('indexScroll');
+  el.innerHTML = INDEX_CONFIG.map((idx, i) => {
+    const key = idx.src === 'eastmoney' ? idx.secid : idx.symbol;
+    const d = data[key];
+    if (!d) return '<div class="index-card"><div class="ic-name">' + idx.name + '</div><div class="ic-pct" style="color:#ccc;">--</div><div class="ic-price" style="color:#ccc;">加载中</div></div>';
+    const isUp = d.changePct >= 0;
+    const pctStr = (isUp ? '+' : '') + d.changePct.toFixed(2) + '%';
+    const priceStr = idx.type === 'us' ? d.price.toFixed(0) : d.price.toFixed(2);
+    return (i === 3 ? '<div class="index-divider"></div>' : '') +
+      '<div class="index-card"><div class="ic-name">' + idx.name + '</div>' +
+      '<div class="ic-pct ' + (isUp ? 'up' : 'down') + '">' + pctStr + '</div>' +
+      '<div class="ic-price">' + priceStr + '<span class="data-badge ' + (source || 'real') + '">' + (source === 'cached' ? '缓存' : '实时') + '</span></div></div>';
+  }).join('');
+  const now = new Date();
+  document.getElementById('indexStatus').textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}
+
+const INDEX_CACHE_KEY = 'fund_helper_index_cache';
 function renderIndexBar() {
   const el = document.getElementById('indexScroll');
-  const statusEl = document.getElementById('indexStatus');
+  // Show cached data immediately if available and less than 1 hour old
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(INDEX_CACHE_KEY)); } catch(e) {}
+  if (cached && cached.data && Date.now() - cached.time < 3600000) {
+    renderIndexCards(cached.data, 'cached');
+  }
+  // Fetch fresh data
   fetchIndices().then(data => {
-    el.innerHTML = INDEX_CONFIG.map((idx, i) => {
-      const key = idx.src === 'eastmoney' ? idx.secid : idx.symbol;
-      const d = data[key];
-      if (!d) return '';
-      const isUp = d.changePct >= 0;
-      const pctStr = (isUp ? '+' : '') + d.changePct.toFixed(2) + '%';
-      const priceStr = idx.type === 'us' ? d.price.toFixed(0) : d.price.toFixed(2);
-      return (i === 3 ? '<div class="index-divider"></div>' : '') +
-        '<div class="index-card"><div class="ic-name">' + idx.name + '</div>' +
-        '<div class="ic-pct ' + (isUp ? 'up' : 'down') + '">' + pctStr + '</div>' +
-        '<div class="ic-price">' + priceStr + '</div></div>';
-    }).join('');
-    const now = new Date();
-    statusEl.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  }).catch(() => { el.innerHTML = '<div style="padding:8px;font-size:11px;color:#ccc;text-align:center;">指数加载失败，请刷新重试</div>'; statusEl.textContent = '加载失败'; });
+    renderIndexCards(data, 'real');
+    // Cache successful results (keep for 1 hour)
+    try { localStorage.setItem(INDEX_CACHE_KEY, JSON.stringify({ data, time: Date.now() })); } catch(e) {}
+  }).catch(() => {
+    if (!cached || !cached.data) {
+      el.innerHTML = '<div style="padding:8px;font-size:11px;color:#ccc;text-align:center;">指数加载失败，请刷新重试</div>';
+      document.getElementById('indexStatus').textContent = '加载失败';
+    }
+    // If we showed cached data, keep it on failure
+  });
 }// ===== Sample Funds (real funds) =====
 const SAMPLE_FUNDS = [
   { code: '000071', name: '华夏恒生ETF联接A', shares: 1000, costNav: null }, // costNav to be populated from API
@@ -1340,6 +1360,7 @@ async function forceRefresh() {
   showToast('🔄 强制刷新中...');
   Object.keys(stockCache).forEach(k => delete stockCache[k]);
   indexDataCache = null; indexDataTime = 0;
+  try { localStorage.removeItem(INDEX_CACHE_KEY); } catch(e) {}
   await autoUpdateNAVs(true);
   renderAll(); renderIndexBar(); updateTimestamp();
   btn.textContent = '↻'; btn.classList.remove('spinning');
