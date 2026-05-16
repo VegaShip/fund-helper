@@ -1342,13 +1342,15 @@ async function autoUpdateNAVs(forceFlag) {
       if (navData && navData.dwjz) {
         const jzrq = navData.jzrq;
         const existIdx = f.records.findIndex(r => r.date === jzrq);
-        if (existIdx >= 0) { f.records[existIdx].nav = parseFloat(navData.dwjz); f.records[existIdx].real = true; }
-        else { f.records.unshift({ date: jzrq, nav: parseFloat(navData.dwjz), real: true }); }
+        if (existIdx === -1) {
+          // Only add new records for NEW dates — never overwrite existing NAVs
+          f.records.unshift({ date: jzrq, nav: parseFloat(navData.dwjz), real: true });
+        }
         // Keep max 60 records
         if (f.records.length > 60) f.records = f.records.slice(0, 60);
-        // Set costNav if not set
+        // Set costNav from oldest record if not already set
         if (!f.costNav && f.records.length > 0) f.costNav = f.records[f.records.length-1].nav;
-        // Estimate
+        // Estimate for today (separate from actual NAV record)
         if (navData.gsz && navData.gztime) {
           f._estimate = { nav: parseFloat(navData.gsz), pct: parseFloat(navData.gszzl), time: navData.gztime };
         } else { delete f._estimate; }
