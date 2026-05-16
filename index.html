@@ -647,13 +647,36 @@ async function fetchSingleStock(symbol) {
 
 // ===== Market Index Data =====
 const INDEX_CONFIG = [
-  { id: 'sp500', name: '标普500', symbol: '^GSPC', type: 'us' },
-  { id: 'nasdaq', name: '纳斯达克', symbol: '^IXIC', type: 'us' },
-  { id: 'dow', name: '道琼斯', symbol: '^DJI', type: 'us' },
-  { id: 'shanghai', name: '上证指数', symbol: '000001.SS', type: 'cn' },
-  { id: 'shenzhen', name: '深证成指', symbol: '399001.SZ', type: 'cn' },
-  { id: 'chnext', name: '创业板指', symbol: '399006.SZ', type: 'cn' },
+  { id: 'es', name: '标普500期货', symbol: 'ES=F', type: 'us', src: 'yahoo' },
+  { id: 'nq', name: '纳斯达克期货', symbol: 'NQ=F', type: 'us', src: 'yahoo' },
+  { id: 'ym', name: '道琼斯期货', symbol: 'YM=F', type: 'us', src: 'yahoo' },
+  { id: 'sh', name: '上证指数', secid: '1.000001', type: 'cn', src: 'eastmoney' },
+  { id: 'sz', name: '深证成指', secid: '0.399001', type: 'cn', src: 'eastmoney' },
+  { id: 'cy', name: '创业板指', secid: '0.399006', type: 'cn', src: 'eastmoney' },
 ];
+
+// Eastmoney JSONP index fetch (domestic, more reliable in China)
+function fetchEastmoneyIndex(secid) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'emi_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    let resolved = false;
+    window[cbName] = (data) => {
+      if (resolved) return;
+      resolved = true;
+      delete window[cbName];
+      try { document.head.removeChild(sc); } catch(e) {}
+      if (data && data.data) {
+        resolve({ price: data.data.f43 / 100, changePct: data.data.f170 / 100, change: data.data.f169 / 100, real: true });
+      } else { reject(new Error('no data')); }
+    };
+    const sc = document.createElement('script');
+    sc.src = 'https://push2.eastmoney.com/api/qt/stock/get?secid=' + secid + '&fields=f43,f170,f169&cb=' + cbName;
+    sc.onerror = () => { if (!resolved) { resolved = true; delete window[cbName]; reject(new Error('failed')); } };
+    document.head.appendChild(sc);
+    setTimeout(() => { if (!resolved) { resolved = true; delete window[cbName]; try { document.head.removeChild(sc); } catch(e) {} reject(new Error('timeout')); } }, 8000);
+  });
+}
+
 let indexDataCache = null;
 let indexDataTime = 0;
 const INDEX_TTL = 120000;
@@ -661,10 +684,15 @@ const INDEX_TTL = 120000;
 async function fetchIndices() {
   const now = Date.now();
   if (indexDataCache && now - indexDataTime < INDEX_TTL) return indexDataCache;
-  const symbols = INDEX_CONFIG.map(x => x.symbol);
-  const settled = await Promise.allSettled(symbols.map(sym => fetchSingleStock(sym)));
   const results = {};
-  settled.forEach((s, i) => { results[symbols[i]] = s.status === 'fulfilled' && s.value ? s.value : null; });
+  // US index futures via Yahoo Finance
+  const yahooItems = INDEX_CONFIG.filter(x => x.src === 'yahoo');
+  const ySettled = await Promise.allSettled(yahooItems.map(x => fetchSingleStock(x.symbol)));
+  ySettled.forEach((s, i) => { results[yahooItems[i].symbol] = s.status === 'fulfilled' && s.value ? s.value : null; });
+  // China indices via Eastmoney JSONP (more reliable in China)
+  const emItems = INDEX_CONFIG.filter(x => x.src === 'eastmoney');
+  const eSettled = await Promise.allSettled(emItems.map(x => fetchEastmoneyIndex(x.secid)));
+  eSettled.forEach((s, i) => { results[emItems[i].secid] = s.status === 'fulfilled' && s.value ? s.value : null; });
   indexDataCache = results; indexDataTime = now;
   return results;
 }
@@ -674,13 +702,14 @@ function renderIndexBar() {
   const statusEl = document.getElementById('indexStatus');
   fetchIndices().then(data => {
     el.innerHTML = INDEX_CONFIG.map((idx, i) => {
-      const d = data[idx.symbol];
+      const key = idx.src === 'eastmoney' ? idx.secid : idx.symbol;
+      const d = data[key];
       if (!d) return '';
       const isUp = d.changePct >= 0;
       const pctStr = (isUp ? '+' : '') + d.changePct.toFixed(2) + '%';
-      const priceStr = d.price.toFixed(idx.type === 'cn' ? 0 : 2);
+      const priceStr = idx.type === 'us' ? d.price.toFixed(0) : d.price.toFixed(2);
       return (i === 3 ? '<div class="index-divider"></div>' : '') +
-        '<div class="index-card"><div class="ic-name">' + idx.name + (d.real ? '' : ' <span style="font-size:8px;color:#ccc;">·</span>') + '</div>' +
+        '<div class="index-card"><div class="ic-name">' + idx.name + '</div>' +
         '<div class="ic-pct ' + (isUp ? 'up' : 'down') + '">' + pctStr + '</div>' +
         '<div class="ic-price">' + priceStr + '</div></div>';
     }).join('');
