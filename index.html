@@ -647,15 +647,46 @@ async function fetchSingleStock(symbol) {
 
 // ===== Market Index Data =====
 const INDEX_CONFIG = [
-  { id: 'es', name: '标普500期货', symbol: 'ES=F', type: 'us', src: 'yahoo' },
-  { id: 'nq', name: '纳斯达克期货', symbol: 'NQ=F', type: 'us', src: 'yahoo' },
-  { id: 'ym', name: '道琼斯期货', symbol: 'YM=F', type: 'us', src: 'yahoo' },
+  { id: 'es', name: '标普500期货', symbol: 'hf_ES', type: 'us', src: 'sina' },
+  { id: 'nq', name: '纳斯达克期货', symbol: 'hf_NQ', type: 'us', src: 'sina' },
+  { id: 'ym', name: '道琼斯期货', symbol: 'hf_YM', type: 'us', src: 'sina' },
   { id: 'sh', name: '上证指数', secid: '1.000001', type: 'cn', src: 'eastmoney' },
   { id: 'sz', name: '深证成指', secid: '0.399001', type: 'cn', src: 'eastmoney' },
   { id: 'cy', name: '创业板指', secid: '0.399006', type: 'cn', src: 'eastmoney' },
 ];
 
-// Eastmoney JSONP index fetch (domestic, more reliable in China)
+// Sina Finance index fetch (global variable pattern, works in China)
+function fetchSinaIndex(symbol) {
+  return new Promise((resolve, reject) => {
+    const globalKey = 'hq_str_' + symbol;
+    delete window[globalKey];
+    const sc = document.createElement('script');
+    sc.src = 'https://hq.sinajs.cn/list=' + symbol;
+    let resolved = false;
+    sc.onload = () => {
+      if (resolved) return;
+      resolved = true;
+      try { document.head.removeChild(sc); } catch(e) {}
+      const raw = window[globalKey];
+      if (raw && typeof raw === 'string') {
+        const p = raw.split(',');
+        // Sina futures format: name, currentPrice, changePercent, open, high, low, date, ...
+        // Different symbols have slightly different formats, parse defensively
+        const price = parseFloat(p[1]) || parseFloat(p[3]) || 0;
+        const prevClose = parseFloat(p[2]) || price;
+        const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+        resolve({ price, changePct, change: price - prevClose, real: true });
+      } else {
+        reject(new Error('no data'));
+      }
+    };
+    sc.onerror = () => { if (!resolved) { resolved = true; try { document.head.removeChild(sc); } catch(e) {} reject(new Error('failed')); } };
+    document.head.appendChild(sc);
+    setTimeout(() => { if (!resolved) { resolved = true; delete window[globalKey]; try { document.head.removeChild(sc); } catch(e) {} reject(new Error('timeout')); } }, 8000);
+  });
+}
+
+// Eastmoney JSONP index fetch (more reliable for domestic indices)
 function fetchEastmoneyIndex(secid) {
   return new Promise((resolve, reject) => {
     const cbName = 'emi_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
@@ -685,11 +716,11 @@ async function fetchIndices() {
   const now = Date.now();
   if (indexDataCache && now - indexDataTime < INDEX_TTL) return indexDataCache;
   const results = {};
-  // US index futures via Yahoo Finance
-  const yahooItems = INDEX_CONFIG.filter(x => x.src === 'yahoo');
-  const ySettled = await Promise.allSettled(yahooItems.map(x => fetchSingleStock(x.symbol)));
-  ySettled.forEach((s, i) => { results[yahooItems[i].symbol] = s.status === 'fulfilled' && s.value ? s.value : null; });
-  // China indices via Eastmoney JSONP (more reliable in China)
+  // US futures via Sina Finance (works better in China)
+  const sinaItems = INDEX_CONFIG.filter(x => x.src === 'sina');
+  const sSettled = await Promise.allSettled(sinaItems.map(x => fetchSinaIndex(x.symbol)));
+  sSettled.forEach((s, i) => { results[sinaItems[i].symbol] = s.status === 'fulfilled' && s.value ? s.value : null; });
+  // China indices via Eastmoney JSONP
   const emItems = INDEX_CONFIG.filter(x => x.src === 'eastmoney');
   const eSettled = await Promise.allSettled(emItems.map(x => fetchEastmoneyIndex(x.secid)));
   eSettled.forEach((s, i) => { results[emItems[i].secid] = s.status === 'fulfilled' && s.value ? s.value : null; });
@@ -716,9 +747,7 @@ function renderIndexBar() {
     const now = new Date();
     statusEl.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
   }).catch(() => { el.innerHTML = '<div style="padding:8px;font-size:11px;color:#ccc;text-align:center;">指数加载失败，请刷新重试</div>'; statusEl.textContent = '加载失败'; });
-}
-
-// ===== Sample Funds (real funds) =====
+}// ===== Sample Funds (real funds) =====
 const SAMPLE_FUNDS = [
   { code: '000071', name: '华夏恒生ETF联接A', shares: 1000, costNav: null }, // costNav to be populated from API
   { code: '118001', name: '易方达全球成长精选A', shares: 500, costNav: null },
