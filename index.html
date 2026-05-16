@@ -294,6 +294,29 @@ body {
   .summary, .section, .index-bar { max-width: 480px; margin-left: auto; margin-right: auto; }
   .header { padding-left: calc(50vw - 240px); padding-right: calc(50vw - 240px); }
 }
+/* ===== Management Mode ===== */
+.fund-card.manage-mode { padding-left: 34px; }
+.fund-checkbox {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd;
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  z-index: 2; transition: all 0.15s;
+}
+.fund-checkbox.checked { background: #1a73e8; border-color: #1a73e8; }
+.fund-checkbox.checked::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+.batch-bar {
+  display: none; position: fixed; bottom: 50px; left: 0; right: 0; z-index: 25;
+  padding: 10px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 10px);
+  background: #fff; border-top: 1px solid #f0f0f0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  justify-content: space-between; gap: 8px; align-items: center;
+}
+.batch-bar.show { display: flex; }
+.batch-bar .batch-btn { height: 40px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+.batch-bar .batch-btn:active { opacity: 0.7; }
+.batch-bar .batch-btn.batch-add { background: #f0f4ff; color: #1a73e8; flex: 1; }
+.batch-bar .batch-btn.batch-del { background: #fff0f0; color: #e74c3c; flex: 1; }
+.batch-bar .batch-btn.batch-del:disabled { opacity: 0.4; cursor: not-allowed; }
+.batch-bar .batch-btn.batch-all { background: #f5f5f5; color: #666; padding: 0 14px; flex: 0 0 auto; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -359,6 +382,12 @@ body {
   <div class="tab-item" data-tab="tabRotate"><span class="tab-icon">🔄</span><span class="tab-label">调仓</span></div>
 </div>
 
+<div class="batch-bar" id="batchBar">
+  <button class="batch-btn batch-all" id="batchSelectAll">全选</button>
+  <button class="batch-btn batch-add" id="batchAddBtn">批量加入</button>
+  <button class="batch-btn batch-del" id="batchDelBtn" disabled>删除 (0)</button>
+</div>
+
 <div class="confirm-bar" id="confirmBar">
   <button class="btn btn-no" id="cancelDelete">取消</button>
   <button class="btn btn-yes" id="confirmDelete">删除</button>
@@ -372,6 +401,18 @@ body {
   <div class="form-row"><div class="form-group"><label class="form-label">持有份额</label><input class="form-input" id="fShares" placeholder="0.00" type="number" step="0.01"></div><div class="form-group"><label class="form-label">成本净值</label><input class="form-input" id="fCost" placeholder="0.0000" type="number" step="0.0001"></div></div>
   <div class="form-group"><label class="form-label">当前净值 <span style="color:#ccc;font-weight:400;">（可选）</span></label><input class="form-input" id="fNav" placeholder="留空则与成本价相同" type="number" step="0.0001"></div>
   <button class="btn-submit" id="addSubmit">添加</button><button class="btn-cancel" id="addCancel">取消</button>
+</div></div>
+
+<!-- Batch Add Modal -->
+<div class="modal-overlay" id="batchAddModal"><div class="modal-sheet">
+  <div class="modal-handle"></div><div class="modal-title">批量添加基金</div>
+  <div class="form-group">
+    <label class="form-label">每行一只基金，格式：</label>
+    <div style="font-size:11px;color:#999;margin-bottom:6px;line-height:1.6;">代码,名称,持有份额,成本净值,当前净值(可选)</div>
+    <div style="font-size:10px;color:#ccc;margin-bottom:6px;background:#f8f8f8;padding:8px;border-radius:6px;line-height:1.5;">示例：<br>000071,华夏恒生ETF联接A,1000,1.2345<br>118001,易方达全球成长精选A,500,0.5678</div>
+    <textarea class="form-input" id="batchAddInput" style="height:150px;padding:10px;resize:none;font-size:13px;line-height:1.6;font-family:inherit;" placeholder="000071,华夏恒生ETF联接A,1000,1.2345"></textarea>
+  </div>
+  <button class="btn-submit" id="batchAddSubmit">批量添加</button><button class="btn-cancel" id="batchAddCancel">取消</button>
 </div></div>
 
 <!-- Update NAV Modal -->
@@ -411,6 +452,8 @@ let deleteTargetId = null;
 let updateTargetId = null;
 let expandedFundId = null;
 let histQueryFundId = null;
+let isManageMode = false;
+let selectedIds = new Set();
 let navCache = {}; // { code: { jzrq, dwjz, gsz, gszzl, fetchTime } }
 
 function loadData() {
@@ -1261,8 +1304,10 @@ function renderPortfolio() {
     const dataBadge = f.records && f.records.length > 0
       ? '<span class="data-badge '+(f.records[0].real ? 'real' : 'cached')+'">'+(f.records[0].real ? '√' : '本地')+'</span>'
       : '<span class="data-badge failed">无数据</span>';
-    return '<div class="fund-card">' +
-      '<div class="fund-card-main" onclick="toggleExpand(\''+f.id+'\')">' +
+    const isSelected = isManageMode && selectedIds.has(f.id);
+    return '<div class="fund-card' + (isManageMode ? ' manage-mode' : '') + '"' + (isManageMode ? ' onclick="toggleSelect(\''+f.id+'\')"' : '') + '>' +
+      (isManageMode ? '<div class="fund-checkbox' + (isSelected ? ' checked' : '') + '" id="cb_' + f.id + '"></div>' : '') +
+      '<div class="fund-card-main" onclick="' + (isManageMode ? 'event.stopPropagation();' : '') + 'toggleExpand(\''+f.id+'\')">' +
       '<div class="top"><div><div class="name">' + escHtml(f.name) + dataBadge +
         ' <span class="tag '+ftype+'">'+(ftype==='qdii'?'QDII':'国内')+'</span>' +
         (holdings?' <span style="font-size:9px;color:#1a73e8;">📊</span>':'') +
@@ -1286,6 +1331,7 @@ function renderPortfolio() {
       '</div></div></div>';
   }).join('');
   if (expandedFundId && funds.some(f => f.id === expandedFundId)) renderFundDetail(expandedFundId);
+  if (isManageMode) syncManageUI();
 }
 
 function renderRanking() {
@@ -1394,6 +1440,26 @@ function updateNav(fundId, newNav) {
 function deleteFund(fundId) {
   funds = funds.filter(f => f.id !== fundId); if (expandedFundId === fundId) expandedFundId = null; saveData(); renderAll();
 }
+function toggleSelect(fundId) {
+  if (selectedIds.has(fundId)) selectedIds.delete(fundId);
+  else selectedIds.add(fundId);
+  const cb = document.getElementById('cb_' + fundId);
+  if (cb) cb.classList.toggle('checked', selectedIds.has(fundId));
+  updateBatchDeleteBtn();
+}
+function updateBatchDeleteBtn() {
+  const btn = document.getElementById('batchDelBtn');
+  if (!btn) return;
+  btn.textContent = '删除 (' + selectedIds.size + ')';
+  btn.disabled = selectedIds.size === 0;
+}
+function syncManageUI() {
+  selectedIds.forEach(id => {
+    const cb = document.getElementById('cb_' + id);
+    if (cb) cb.classList.add('checked');
+  });
+  updateBatchDeleteBtn();
+}
 
 // ===== UI =====
 function showToast(msg, dur) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._hide); t._hide = setTimeout(() => t.classList.remove('show'), dur || 1500); }
@@ -1411,7 +1477,8 @@ document.querySelectorAll('.tab-item').forEach(item => {
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     this.classList.add('active'); document.getElementById(this.dataset.tab).classList.add('active');
-    document.getElementById('addBtn').style.display = this.dataset.tab === 'tabPortfolio' && funds.length > 0 ? 'flex' : 'none';
+    const showAdd = this.dataset.tab === 'tabPortfolio' && funds.length > 0 && !isManageMode;
+    document.getElementById('addBtn').style.display = showAdd ? 'flex' : 'none';
     if (this.dataset.tab === 'tabRanking') renderRanking();
     if (this.dataset.tab === 'tabRotate') renderRotate();
   });
@@ -1452,7 +1519,82 @@ document.getElementById('fundList').addEventListener('touchend', () => clearTime
 document.getElementById('fundList').addEventListener('touchmove', () => clearTimeout(longPressTimer));
 document.getElementById('cancelDelete').addEventListener('click', () => { document.getElementById('confirmBar').classList.remove('show'); deleteTargetId = null; });
 document.getElementById('confirmDelete').addEventListener('click', () => { if (deleteTargetId) { deleteFund(deleteTargetId); showToast('已删除'); } document.getElementById('confirmBar').classList.remove('show'); deleteTargetId = null; });
-document.getElementById('manageBtn').addEventListener('click', function() { this.textContent = this.textContent === '管理' ? '完成' : '管理'; });
+document.getElementById('manageBtn').addEventListener('click', function() {
+  isManageMode = !isManageMode;
+  this.textContent = isManageMode ? '完成' : '管理';
+  selectedIds.clear();
+  document.getElementById('batchBar').classList.toggle('show', isManageMode);
+  document.getElementById('addBtn').style.display = isManageMode ? 'none' : (funds.length > 0 ? 'flex' : 'none');
+  // Close expanded card
+  if (expandedFundId) {
+    const p = document.getElementById('detail_'+expandedFundId);
+    const pi = document.getElementById('eicon_'+expandedFundId);
+    if (p) p.classList.remove('show');
+    if (pi) pi.classList.remove('open');
+    expandedFundId = null;
+  }
+  renderPortfolio();
+  if (isManageMode) syncManageUI();
+});
+// ===== Batch Operations =====
+document.getElementById('batchAddBtn').addEventListener('click', () => {
+  document.getElementById('batchAddInput').value = '';
+  document.getElementById('batchAddModal').classList.add('show');
+});
+document.getElementById('batchAddCancel').addEventListener('click', () => document.getElementById('batchAddModal').classList.remove('show'));
+document.getElementById('batchAddModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+document.getElementById('batchAddSubmit').addEventListener('click', () => {
+  const input = document.getElementById('batchAddInput').value.trim();
+  if (!input) { showToast('请输入基金数据'); return; }
+  const lines = input.split('\n').filter(l => l.trim());
+  let added = 0, failed = 0;
+  lines.forEach(line => {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length >= 4) {
+      const code = parts[0], name = parts[1];
+      const shares = parseFloat(parts[2]), costNav = parseFloat(parts[3]);
+      const curNav = parts[4] ? parseFloat(parts[4]) : costNav;
+      if (code && name && shares > 0 && costNav > 0 && curNav > 0) {
+        funds.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          code: code.trim(), name: name.trim(), shares, costNav,
+          records: [{ date: todayStr(), nav: curNav, real: false }]
+        });
+        added++;
+      } else { failed++; }
+    } else { failed++; }
+  });
+  if (added > 0) { saveData(); renderAll(); }
+  document.getElementById('batchAddModal').classList.remove('show');
+  showToast('✅ 成功添加 ' + added + ' 只基金' + (failed > 0 ? ('，' + failed + ' 只失败') : ''));
+});
+document.getElementById('batchDelBtn').addEventListener('click', function() {
+  const count = selectedIds.size;
+  if (count === 0) { showToast('请先选择要删除的基金'); return; }
+  if (!confirm('确定删除选中的 ' + count + ' 只基金吗？\n此操作不可撤销！')) return;
+  funds = funds.filter(f => !selectedIds.has(f.id));
+  selectedIds.clear();
+  saveData();
+  renderAll();
+  updateBatchDeleteBtn();
+  showToast('已删除 ' + count + ' 只基金');
+});
+document.getElementById('batchSelectAll').addEventListener('click', function() {
+  if (selectedIds.size === funds.length) {
+    selectedIds.clear();
+    funds.forEach(f => {
+      const cb = document.getElementById('cb_' + f.id);
+      if (cb) cb.classList.remove('checked');
+    });
+  } else {
+    selectedIds = new Set(funds.map(f => f.id));
+    funds.forEach(f => {
+      const cb = document.getElementById('cb_' + f.id);
+      if (cb) cb.classList.add('checked');
+    });
+  }
+  updateBatchDeleteBtn();
+});
 document.getElementById('rankRefresh').addEventListener('click', () => { renderRanking(); showToast('已刷新'); });
 document.getElementById('rotateRefresh').addEventListener('click', () => { renderRotate(); showToast('已刷新'); });
 
