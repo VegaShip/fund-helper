@@ -670,10 +670,9 @@ function fetchSinaIndex(symbol) {
       const raw = window[globalKey];
       if (raw && typeof raw === 'string') {
         const p = raw.split(',');
-        // Sina futures format: name, currentPrice, changePercent, open, high, low, date, ...
-        // Different symbols have slightly different formats, parse defensively
-        const price = parseFloat(p[1]) || parseFloat(p[3]) || 0;
-        const prevClose = parseFloat(p[2]) || price;
+        // Sina futures format: [0]=currentPrice, [1]="", [2]=bid, [3]=ask, [4]=open, [5]=high, [6]=low, [7]=prevSettle, [8]=prevClose
+        const price = parseFloat(p[0]) || 0;
+        const prevClose = parseFloat(p[7]) || price;
         const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
         resolve({ price, changePct, change: price - prevClose, real: true });
       } else {
