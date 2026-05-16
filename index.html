@@ -1307,7 +1307,7 @@ function renderPortfolio() {
     const isSelected = isManageMode && selectedIds.has(f.id);
     return '<div class="fund-card' + (isManageMode ? ' manage-mode' : '') + '"' + (isManageMode ? ' onclick="toggleSelect(\''+f.id+'\')"' : '') + '>' +
       (isManageMode ? '<div class="fund-checkbox' + (isSelected ? ' checked' : '') + '" id="cb_' + f.id + '"></div>' : '') +
-      '<div class="fund-card-main" onclick="' + (isManageMode ? 'event.stopPropagation();' : '') + 'toggleExpand(\''+f.id+'\')">' +
+      '<div class="fund-card-main' + (isManageMode ? '' : ' onclick="toggleExpand(\''+f.id+'\')"') + '">' +
       '<div class="top"><div><div class="name">' + escHtml(f.name) + dataBadge +
         ' <span class="tag '+ftype+'">'+(ftype==='qdii'?'QDII':'国内')+'</span>' +
         (holdings?' <span style="font-size:9px;color:#1a73e8;">📊</span>':'') +
